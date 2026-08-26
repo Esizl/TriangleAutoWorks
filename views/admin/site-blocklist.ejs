@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oil Change Blocklist — Triangle Auto Works</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #FAFAFA;
+            --surface: #FFFFFF;
+            --ink: #1D1D1F;
+            --ink-soft: #6E6E73;
+            --ink-faint: #AEAEB2;
+            --line: rgba(0,0,0,0.07);
+            --red: #C8102E;
+            --red-soft: rgba(200,16,46,0.08);
+            --blue: #0071E3;
+            --green: #1E8E5A;
+            --radius: 14px;
+            --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { -webkit-font-smoothing: antialiased; }
+        body {
+            background: var(--bg);
+            color: var(--ink);
+            font-family: var(--font);
+            font-size: 15px;
+            line-height: 1.45;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(250,250,250,0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--line);
+            padding: 0 32px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .topbar-title { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+        .topbar-back {
+            display: flex; align-items: center; gap: 6px;
+            color: var(--ink-soft); text-decoration: none;
+            font-size: 13px; font-weight: 600; transition: color 0.15s;
+        }
+        .topbar-back:hover { color: var(--ink); }
+        .topbar-back svg { width: 13px; height: 13px; stroke: currentColor; }
+
+        .shell {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 40px 32px 100px;
+        }
+
+        .page-heading {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .page-heading h1 {
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .page-heading .count {
+            font-size: 14px;
+            color: var(--ink-soft);
+            font-weight: 500;
+        }
+        .page-sub {
+            font-size: 13.5px;
+            color: var(--ink-soft);
+            margin-bottom: 28px;
+        }
+
+        .flash {
+            padding: 13px 16px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        .flash-success { background: rgba(30,142,90,0.08); border: 1px solid rgba(30,142,90,0.25); color: var(--green); }
+        .flash-error { background: rgba(200,16,46,0.08); border: 1px solid rgba(200,16,46,0.25); color: var(--red); }
+
+        .entry-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 28px;
+        }
+        .entry-card {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+        }
+        .entry-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .entry-make {
+            font-size: 15.5px;
+            font-weight: 600;
+        }
+        .entry-scope {
+            display: inline-block;
+            margin-left: 8px;
+            font-size: 11.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 3px 9px;
+            border-radius: 100px;
+            background: var(--red-soft);
+            color: var(--red);
+            vertical-align: 2px;
+        }
+        .entry-models {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .model-chip {
+            background: var(--bg);
+            border: 1px solid var(--line);
+            border-radius: 100px;
+            padding: 4px 11px;
+            font-size: 12.5px;
+            font-weight: 600;
+        }
+        .entry-reason {
+            font-size: 13px;
+            color: var(--ink-soft);
+            line-height: 1.5;
+        }
+        .no-entries {
+            padding: 28px 20px;
+            text-align: center;
+            border: 1.5px dashed var(--line);
+            border-radius: var(--radius);
+            color: var(--ink-faint);
+            font-size: 13.5px;
+            font-weight: 600;
+            margin-bottom: 28px;
+        }
+
+        .btn-mini {
+            font-family: var(--font);
+            font-size: 12.5px;
+            font-weight: 600;
+            padding: 7px 13px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid var(--line);
+            background: var(--surface);
+            color: var(--ink);
+            white-space: nowrap;
+        }
+        .btn-mini:hover { background: rgba(0,0,0,0.03); }
+        .btn-mini-danger {
+            border-color: rgba(200,16,46,0.2);
+            color: var(--red);
+            background: var(--red-soft);
+        }
+        .btn-mini-danger:hover { background: rgba(200,16,46,0.14); }
+
+        .add-card {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 20px;
+        }
+        .add-card-title {
+            font-size: 15.5px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .field-label {
+            display: block;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--ink-soft);
+            margin-bottom: 6px;
+        }
+        .field-group { margin-bottom: 16px; }
+        .field-group select,
+        .field-group textarea {
+            width: 100%;
+            font-family: var(--font);
+            font-size: 13.5px;
+            padding: 9px 12px;
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            background: var(--bg);
+            outline: none;
+            color: var(--ink);
+        }
+        .field-group select:focus,
+        .field-group textarea:focus { border-color: var(--blue); }
+        .field-group textarea {
+            resize: vertical;
+            min-height: 64px;
+            line-height: 1.5;
+        }
+
+        .scope-row {
+            display: flex;
+            gap: 18px;
+        }
+        .scope-option {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 13.5px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .scope-option input { accent-color: var(--red); cursor: pointer; }
+
+        .model-picker {
+            display: none;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 12px;
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            background: var(--bg);
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .model-picker.visible { display: flex; }
+        .model-check {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12.5px;
+            font-weight: 600;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 100px;
+            padding: 5px 12px 5px 9px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .model-check input { accent-color: var(--red); cursor: pointer; }
+        .model-picker-empty {
+            font-size: 12.5px;
+            color: var(--ink-faint);
+            font-style: italic;
+        }
+
+        .model-group { display: none; }
+        .model-group.active { display: contents; }
+
+        .btn-primary {
+            font-family: var(--font);
+            font-size: 13px;
+            font-weight: 600;
+            padding: 9px 16px;
+            border-radius: 9px;
+            cursor: pointer;
+            border: none;
+            background: var(--ink);
+            color: var(--surface);
+        }
+        .btn-primary:hover { opacity: 0.85; }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <a href="/admin/site" class="topbar-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Site
+        </a>
+        <div class="topbar-title">Triangle Auto Works — Admin</div>
+        <div style="width:90px"></div>
+    </div>
+
+    <div class="shell">
+        <div class="page-heading">
+            <h1>Oil Change Blocklist</h1>
+            <span class="count"><%= blocklist.length %> entr<%= blocklist.length === 1 ? 'y' : 'ies' %></span>
+        </div>
+        <div class="page-sub">Vehicles where standard oil change services are disabled in the booking form and replaced with a custom-quote prompt. One entry per make.</div>
+
+        <% if (typeof successMessage !== 'undefined' && successMessage && successMessage.length) { %>
+            <% successMessage.forEach(function(msg) { %>
+                <div class="flash flash-success"><%= msg %></div>
+            <% }) %>
+        <% } %>
+        <% if (typeof errorMessage !== 'undefined' && errorMessage && errorMessage.length) { %>
+            <% errorMessage.forEach(function(msg) { %>
+                <div class="flash flash-error"><%= msg %></div>
+            <% }) %>
+        <% } %>
+
+        <% if (blocklist.length === 0) { %>
+            <div class="no-entries">No blocked vehicles — every make/model can book a standard oil change.</div>
+        <% } else { %>
+            <div class="entry-list">
+                <% blocklist.forEach(function(entry) { %>
+                    <% const removeMsg = 'Remove ' + entry.make + ' from the blocklist? Standard oil changes will become bookable again.'; %>
+                    <div class="entry-card">
+                        <div class="entry-header">
+                            <div>
+                                <span class="entry-make"><%= entry.make %></span>
+                                <% if (entry.models === 'all') { %>
+                                    <span class="entry-scope">All models</span>
+                                <% } %>
+                            </div>
+                            <form method="POST" action="/admin/site/blocklist/delete" class="confirm-form" data-confirm="<%= removeMsg %>">
+                                <input type="hidden" name="make" value="<%= entry.make %>">
+                                <button type="submit" class="btn-mini btn-mini-danger">Remove</button>
+                            </form>
+                        </div>
+                        <% if (Array.isArray(entry.models)) { %>
+                            <div class="entry-models">
+                                <% entry.models.forEach(function(model) { %>
+                                    <span class="model-chip"><%= model %></span>
+                                <% }); %>
+                            </div>
+                        <% } %>
+                        <div class="entry-reason"><%= entry.reason %></div>
+                    </div>
+                <% }); %>
+            </div>
+        <% } %>
+
+        <div class="add-card">
+            <div class="add-card-title">Block a vehicle</div>
+            <form method="POST" action="/admin/site/blocklist" id="add-blocklist-form">
+                <div class="field-group">
+                    <label class="field-label" for="block-make">Make</label>
+                    <select name="make" id="block-make" required>
+                        <option value="" disabled selected>Select a make…</option>
+                        <% Object.keys(vehicleData).sort().forEach(function(make) { %>
+                            <option value="<%= make %>"><%= make %></option>
+                        <% }); %>
+                    </select>
+                </div>
+
+                <div class="field-group">
+                    <span class="field-label">Scope</span>
+                    <div class="scope-row">
+                        <label class="scope-option">
+                            <input type="radio" name="scope" value="all" checked>
+                            All models
+                        </label>
+                        <label class="scope-option">
+                            <input type="radio" name="scope" value="models">
+                            Specific models
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <div class="model-picker" id="model-picker">
+                        <span class="model-picker-empty" id="model-picker-empty">Select a make first.</span>
+                        <% Object.keys(vehicleData).sort().forEach(function(make) { %>
+                            <div class="model-group" data-make="<%= make %>">
+                                <% Object.keys(vehicleData[make]).sort().forEach(function(model) { %>
+                                    <label class="model-check">
+                                        <input type="checkbox" name="models" value="<%= model %>" disabled>
+                                        <%= model %>
+                                    </label>
+                                <% }); %>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label" for="block-reason">Reason (shown to the customer)</label>
+                    <textarea name="reason" id="block-reason" placeholder="e.g. Skid plate removal required — not offered as a standard service. Available as a custom quote." required></textarea>
+                </div>
+
+                <button type="submit" class="btn-primary">Add to blocklist</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        var makeSelect = document.getElementById('block-make');
+        var modelPicker = document.getElementById('model-picker');
+        var pickerEmpty = document.getElementById('model-picker-empty');
+        var scopeRadios = document.querySelectorAll('input[name="scope"]');
+        var addForm = document.getElementById('add-blocklist-form');
+
+        function currentScope() {
+            var checked = document.querySelector('input[name="scope"]:checked');
+            return checked ? checked.value : 'all';
+        }
+
+        function renderModelPicker() {
+            var make = makeSelect.value;
+            var groups = modelPicker.querySelectorAll('.model-group');
+            var activeGroup = null;
+
+            groups.forEach(function (group) {
+                var isActive = group.getAttribute('data-make') === make;
+                group.classList.toggle('active', isActive);
+
+                group.querySelectorAll('input').forEach(function (box) {
+                    box.disabled = !isActive;
+                    if (!isActive) { box.checked = false; }
+                });
+
+                if (isActive) { activeGroup = group; }
+            });
+
+            if (!activeGroup) {
+                pickerEmpty.textContent = 'Select a make first.';
+                pickerEmpty.style.display = '';
+            } else if (activeGroup.childElementCount === 0) {
+                pickerEmpty.textContent = 'No models exist for this make yet.';
+                pickerEmpty.style.display = '';
+            } else {
+                pickerEmpty.style.display = 'none';
+            }
+        }
+
+        function updateScopeVisibility() {
+            if (currentScope() === 'models') {
+                modelPicker.classList.add('visible');
+            } else {
+                modelPicker.classList.remove('visible');
+            }
+        }
+
+        makeSelect.addEventListener('change', renderModelPicker);
+        scopeRadios.forEach(function (radio) {
+            radio.addEventListener('change', updateScopeVisibility);
+        });
+
+        addForm.addEventListener('submit', function (e) {
+            if (currentScope() === 'models') {
+                var anyChecked = modelPicker.querySelector('input[name="models"]:checked:not(:disabled)');
+                if (!anyChecked) {
+                    e.preventDefault();
+                    window.alert('Select at least one model, or switch scope to "All models".');
+                }
+            }
+        });
+
+        renderModelPicker();
+        updateScopeVisibility();
+
+        document.querySelectorAll('.confirm-form').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                var message = form.getAttribute('data-confirm');
+                if (message && !window.confirm(message)) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Config — Triangle Auto Works</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #FAFAFA;
+            --surface: #FFFFFF;
+            --ink: #1D1D1F;
+            --ink-soft: #6E6E73;
+            --ink-faint: #AEAEB2;
+            --line: rgba(0,0,0,0.07);
+            --red: #C8102E;
+            --red-soft: rgba(200,16,46,0.08);
+            --blue: #0071E3;
+            --green: #1E8E5A;
+            --radius: 14px;
+            --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { -webkit-font-smoothing: antialiased; }
+        body {
+            background: var(--bg);
+            color: var(--ink);
+            font-family: var(--font);
+            font-size: 15px;
+            line-height: 1.45;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(250,250,250,0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--line);
+            padding: 0 32px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .topbar-title { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+        .topbar-back {
+            display: flex; align-items: center; gap: 6px;
+            color: var(--ink-soft); text-decoration: none;
+            font-size: 13px; font-weight: 600; transition: color 0.15s;
+        }
+        .topbar-back:hover { color: var(--ink); }
+        .topbar-back svg { width: 13px; height: 13px; stroke: currentColor; }
+
+        .shell {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 40px 32px 100px;
+        }
+
+        .page-heading h1 {
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+        .page-sub {
+            font-size: 13.5px;
+            color: var(--ink-soft);
+            margin-bottom: 28px;
+        }
+
+        .flash {
+            padding: 13px 16px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        .flash-success { background: rgba(30,142,90,0.08); border: 1px solid rgba(30,142,90,0.25); color: var(--green); }
+        .flash-error { background: rgba(200,16,46,0.08); border: 1px solid rgba(200,16,46,0.25); color: var(--red); }
+
+        .config-card {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 24px;
+        }
+
+        .config-field {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 24px;
+            padding: 18px 0;
+            border-bottom: 1px solid var(--line);
+        }
+        .config-field:first-child { padding-top: 0; }
+        .config-field:last-of-type { border-bottom: none; }
+
+        .config-field-info { flex: 1; }
+        .config-field-name {
+            font-size: 14.5px;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        .config-field-desc {
+            font-size: 12.5px;
+            color: var(--ink-soft);
+            line-height: 1.5;
+        }
+
+        .config-input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .config-input-prefix,
+        .config-input-suffix {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--ink-faint);
+        }
+        .config-input-wrap input {
+            font-family: var(--font);
+            font-size: 14px;
+            font-weight: 600;
+            padding: 9px 12px;
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            background: var(--bg);
+            outline: none;
+            width: 110px;
+            text-align: right;
+            color: var(--ink);
+        }
+        .config-input-wrap input:focus { border-color: var(--blue); }
+
+        .config-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .config-updated {
+            font-size: 12.5px;
+            color: var(--ink-faint);
+            font-weight: 500;
+        }
+        .btn-primary {
+            font-family: var(--font);
+            font-size: 13px;
+            font-weight: 600;
+            padding: 10px 18px;
+            border-radius: 9px;
+            cursor: pointer;
+            border: none;
+            background: var(--ink);
+            color: var(--surface);
+        }
+        .btn-primary:hover { opacity: 0.85; }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <a href="/admin/site" class="topbar-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Site
+        </a>
+        <div class="topbar-title">Triangle Auto Works — Admin</div>
+        <div style="width:90px"></div>
+    </div>
+
+    <div class="shell">
+        <div class="page-heading">
+            <h1>Business Config</h1>
+        </div>
+        <div class="page-sub">Rates and limits used across the booking flow. Changes take effect immediately. Owner-only.</div>
+
+        <% if (typeof successMessage !== 'undefined' && successMessage && successMessage.length) { %>
+            <% successMessage.forEach(function(msg) { %>
+                <div class="flash flash-success"><%= msg %></div>
+            <% }) %>
+        <% } %>
+        <% if (typeof errorMessage !== 'undefined' && errorMessage && errorMessage.length) { %>
+            <% errorMessage.forEach(function(msg) { %>
+                <div class="flash flash-error"><%= msg %></div>
+            <% }) %>
+        <% } %>
+
+        <form method="POST" action="/admin/site/config">
+            <div class="config-card">
+                <div class="config-field">
+                    <div class="config-field-info">
+                        <div class="config-field-name">Labor rate</div>
+                        <div class="config-field-desc">Hourly labor rate used for quotes and repair pricing.</div>
+                    </div>
+                    <div class="config-input-wrap">
+                        <span class="config-input-prefix">$</span>
+                        <input type="number" name="laborRatePerHour" value="<%= config.laborRatePerHour %>" min="0" step="0.01" required>
+                        <span class="config-input-suffix">/hr</span>
+                    </div>
+                </div>
+
+                <div class="config-field">
+                    <div class="config-field-info">
+                        <div class="config-field-name">Standalone diagnostic fee</div>
+                        <div class="config-field-desc">Trip charge when a diagnostic is booked on its own. Free when bundled with a repair.</div>
+                    </div>
+                    <div class="config-input-wrap">
+                        <span class="config-input-prefix">$</span>
+                        <input type="number" name="diagnosticStandaloneFee" value="<%= config.diagnosticStandaloneFee %>" min="0" step="0.01" required>
+                    </div>
+                </div>
+
+                <div class="config-field">
+                    <div class="config-field-info">
+                        <div class="config-field-name">Booking capacity per time window</div>
+                        <div class="config-field-desc">Max confirmed bookings allowed in each availability window before it shows as unavailable.</div>
+                    </div>
+                    <div class="config-input-wrap">
+                        <input type="number" name="bookingCapacityPerWindow" value="<%= config.bookingCapacityPerWindow %>" min="1" step="1" required>
+                        <span class="config-input-suffix">bookings</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-actions">
+                <span class="config-updated">Last saved: <%= config.updatedAt ? config.updatedAt.toLocaleString('en-US') : 'never' %></span>
+                <button type="submit" class="btn-primary">Save changes</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

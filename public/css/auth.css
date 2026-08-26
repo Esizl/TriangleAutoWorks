@@ -1,0 +1,238 @@
+/**
+ * auth.css
+ * -----------------------------------------------------------------------
+ * Styles specific to the login/signup pages. Loaded AFTER booking.css so
+ * it can reuse --black/--card/--red/etc. CSS variables and the existing
+ * .field / .btn-primary / .btn-ghost / .field-error component styles
+ * rather than redefining them.
+ * -----------------------------------------------------------------------
+ */
+
+/* ── PAGE LAYOUT ── */
+.auth-layout {
+    min-height: 100vh;
+    padding-top: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 104px 24px 60px;
+}
+
+.auth-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 48px 44px;
+    width: 100%;
+    max-width: 420px;
+}
+
+.auth-card-wide {
+    max-width: 480px;
+}
+
+.auth-card .step-title {
+    font-size: clamp(32px, 4vw, 44px);
+    margin-bottom: 28px;
+}
+
+.auth-card .red-rule {
+    margin-bottom: 28px;
+}
+
+.auth-card .field-group {
+    margin-bottom: 20px;
+}
+
+/* ── SUCCESS BANNER (server-rendered) ── */
+.auth-success-banner {
+    background: rgba(46, 204, 113, 0.1);
+    border: 1px solid rgba(46, 204, 113, 0.35); 
+    color: #2ecc71;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.5;
+    padding: 12px 16px;
+    border-radius: 2px;
+    margin-bottom: 24px;
+}
+
+/* ── ERROR BANNER (server-rendered) ── */
+.auth-error-banner {
+    background: rgba(231, 76, 60, 0.1);
+    border: 1px solid rgba(231, 76, 60, 0.35);
+    color: #e74c3c;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.5;
+    padding: 12px 16px;
+    border-radius: 2px;
+    margin-bottom: 24px;
+}
+
+/* ── PASSWORD FIELD WITH SHOW/HIDE TOGGLE ── */
+.password-field-row {
+    position: relative;
+    display: flex;
+}
+
+.password-field-row input {
+    padding-right: 48px;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 44px;
+    background: none;
+    border: none;
+    color: var(--silver-dim);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.password-toggle-btn:hover {
+    color: var(--white);
+}
+
+.password-toggle-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.password-toggle-btn.active {
+    color: var(--red);
+}
+
+/* ── PASSWORD STRENGTH METER ── */
+.password-strength-meter {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+    margin-top: 10px;
+    overflow: hidden;
+}
+
+.password-strength-bar {
+    height: 100%;
+    width: 0%;
+    background: #E8394D;
+    border-radius: 2px;
+    transition: width 0.25s, background 0.25s;
+}
+
+.password-strength-bar.weak {
+    width: 33%;
+    background: #E8394D;
+}
+
+.password-strength-bar.medium {
+    width: 66%;
+    background: #E8B339;
+}
+
+.password-strength-bar.strong {
+    width: 100%;
+    background: #4ADE80;
+}
+
+/* ── CHECKBOXES (remember me, terms agreement) ── */
+.auth-checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+    line-height: 1.5;
+}
+
+.auth-checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+    flex-shrink: 0;
+    accent-color: var(--red);
+    cursor: pointer;
+}
+
+.auth-checkbox-label-terms span {
+    color: var(--silver-dim);
+}
+
+/* ── ROW LAYOUTS ── */
+.auth-row-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    gap: 16px;
+}
+
+.auth-inline-link {
+    color: var(--red);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.auth-inline-link:hover {
+    color: var(--white);
+    text-decoration: underline;
+}
+
+/* ── SUBMIT / SECONDARY BUTTONS ── */
+.auth-submit-btn {
+    width: 100%;
+    justify-content: center;
+}
+
+.auth-secondary-btn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+}
+
+/* ── DIVIDER ── */
+.auth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 28px 0 20px;
+    color: var(--silver-dim);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
+.auth-divider span {
+    padding: 0 14px;
+    white-space: nowrap;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 480px) {
+    .auth-card {
+        padding: 36px 24px;
+    }
+
+    .auth-row-between {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+}

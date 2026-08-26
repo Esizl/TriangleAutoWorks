@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account — Triangle Auto Works</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/css/booking.css">
+    <link rel="stylesheet" href="/css/auth.css">
+</head>
+
+<body>
+
+    <nav>
+        <a href="/" class="nav-logo">
+            <svg width="36" height="36" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"
+                style="margin-right:0">
+                <polygon points="20,2 38,36 2,36" fill="none" stroke="#C8102E" stroke-width="2.5" />
+                <text x="20" y="32" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="18"
+                    fill="#C0C0C0">TA</text>
+            </svg>
+            <div class="nav-wordmark" style="margin-left:10px">
+                Triangle
+                <span>Auto Works</span>
+            </div>
+        </a>
+        <a href="/" class="nav-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back to Site
+        </a>
+    </nav>
+
+    <div class="auth-layout">
+        <div class="auth-card auth-card-wide">
+
+            <div class="step-eyebrow">Account</div>
+            <h2 class="step-title">Create Your Account</h2>
+            <div class="red-rule"></div>
+
+            <!-- Server-rendered error banner(s). The signup route collects
+                 validation problems into an `errors` array of
+                 { message } objects and re-renders this page with it on
+                 failure (see routes/auth.js). Render nothing if `errors`
+                 isn't passed at all (e.g. on the initial GET /signup). -->
+            <% if (typeof errors !== 'undefined' && errors && errors.length > 0) { %>
+                <% errors.forEach(function (err) { %>
+                    <div class="auth-error-banner"><%= err.message %></div>
+                <% }) %>
+            <% } %>
+
+            <!-- Flash-style success/error banners for parity with the
+                 other auth flows in this app (e.g. req.flash messages).
+                 Only rendered if the corresponding local was actually
+                 passed in — connect-flash locals are usually empty
+                 strings/arrays rather than undefined, so check for
+                 truthiness/non-empty rather than typeof alone. -->
+            <% if (typeof successMessage !== 'undefined' && successMessage) { %>
+                <div class="alert success"><%= successMessage %></div>
+            <% } %>
+            <% if (typeof errorMessage !== 'undefined' && errorMessage) { %>
+                <div class="alert error"><%= errorMessage %></div>
+            <% } %>
+
+            <form id="signupForm" method="POST" action="/auth/signup" novalidate>
+
+                <div class="field-group cols-1">
+                    <div class="field" id="f-signup-name">
+                        <label>Full Name</label>
+                        <input type="text" id="signupName" name="name" placeholder="Full name"
+                            autocomplete="name" value="<%= typeof name !== 'undefined' ? name : '' %>"
+                            oninput="clearFieldError('f-signup-name')">
+                        <div class="field-error">Full name is required.</div>
+                    </div>
+                </div>
+
+                <div class="field-group cols-1">
+                    <div class="field" id="f-signup-email">
+                        <label>Email</label>
+                        <input type="email" id="signupEmail" name="email" placeholder="you@email.com"
+                            autocomplete="email" value="<%= typeof email !== 'undefined' ? email : '' %>"
+                            oninput="clearFieldError('f-signup-email')">
+                        <div class="field-error">Please enter a valid email address.</div>
+                    </div>
+                </div>
+
+                <div class="field-group cols-1">
+                    <div class="field" id="f-signup-phone">
+                        <label>Phone</label>
+                        <input type="tel" id="signupPhone" name="phone" placeholder="(555) 000-0000"
+                            autocomplete="tel" value="<%= typeof phone !== 'undefined' ? phone : '' %>"
+                            oninput="formatPhone(this); clearFieldError('f-signup-phone')">
+                        <div class="field-hint">We'll use this to confirm appointments by text.</div>
+                        <div class="field-error">Please enter a valid phone number.</div>
+                    </div>
+                </div>
+
+                <div class="field-group cols-1">
+                    <div class="field" id="f-signup-password">
+                        <label>Password</label>
+                        <div class="password-field-row">
+                            <input type="password" id="signupPassword" name="password" placeholder="Create a password"
+                                autocomplete="new-password" oninput="onSignupPasswordInput()">
+                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('signupPassword', this)" aria-label="Show password">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="password-strength-meter" id="passwordStrengthMeter">
+                            <div class="password-strength-bar" id="passwordStrengthBar"></div>
+                        </div>
+                        <div class="field-hint" id="passwordStrengthLabel">At least 8 characters.</div>
+
+                        <div class="field-error">Password must be at least 8 characters.</div>
+                    </div>
+                </div>
+
+                <div class="field-group cols-1">
+                    <div class="field" id="f-signup-confirm">
+                        <label>Confirm Password</label>
+                        <input type="password" id="signupConfirmPassword" name="password2"
+                            placeholder="Re-enter your password" autocomplete="new-password"
+                            oninput="clearFieldError('f-signup-confirm')">
+                        <div class="field-error">Passwords don't match.</div>
+                    </div>
+                </div>
+
+                <div class="field-group cols-1">
+                    <div class="field" id="f-signup-terms">
+                        <label class="auth-checkbox-label auth-checkbox-label-terms">
+                            <input type="checkbox" id="agreeTerms" name="agreeTerms"
+                                <%= (typeof agreeTerms !== 'undefined' && agreeTerms) ? 'checked' : '' %>
+                                oninput="clearFieldError('f-signup-terms')">
+                            <span>I agree to the <a href="/terms" class="auth-inline-link">Terms of Service</a> and <a href="/privacy" class="auth-inline-link">Privacy Policy</a>.</span>
+                        </label>
+                        <div class="field-error">You must agree to the terms to create an account.</div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary auth-submit-btn" id="signupSubmitBtn">
+                    Create Account
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                </button>
+
+            </form>
+
+            <div class="auth-divider"><span>Already have an account?</span></div>
+
+            <a href="/login" class="btn-ghost auth-secondary-btn">Log In</a>
+
+        </div>
+    </div>
+
+    <script src="/js/auth.js"></script>
+    <script>
+        document.getElementById('signupForm').addEventListener('submit', function (e) {
+            if (!validateSignupForm()) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+
+</html>

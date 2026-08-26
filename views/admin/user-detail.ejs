@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= targetUser.name %> — Triangle Auto Works
+    </title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #FAFAFA;
+            --surface: #FFFFFF;
+            --ink: #1D1D1F;
+            --ink-soft: #6E6E73;
+            --ink-faint: #AEAEB2;
+            --line: rgba(0, 0, 0, 0.07);
+            --red: #C8102E;
+            --red-soft: rgba(200, 16, 46, 0.08);
+            --amber: #E8B339;
+            --blue: #0071E3;
+            --green: #1E8E5A;
+            --gray: #98989D;
+            --radius: 14px;
+            --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--ink);
+            font-family: var(--font);
+            font-size: 15px;
+            line-height: 1.45;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(250, 250, 250, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--line);
+            padding: 0 32px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .topbar-title {
+            font-size: 17px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        .topbar-meta {
+            font-size: 13px;
+            color: var(--ink-soft);
+        }
+
+        .topbar-back {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--ink-soft);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: color 0.15s;
+        }
+
+        .topbar-back:hover {
+            color: var(--ink);
+        }
+
+        .topbar-back svg {
+            width: 13px;
+            height: 13px;
+            stroke: currentColor;
+        }
+
+        .shell {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 40px 32px 100px;
+        }
+
+        .identity-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .user-avatar-lg {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--red-soft);
+            color: var(--red);
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .identity-name {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 3px;
+        }
+
+        .identity-meta {
+            font-size: 13px;
+            color: var(--ink-soft);
+        }
+
+        .role-pill {
+            font-size: 11.5px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 100px;
+            margin-left: 8px;
+        }
+
+        .role-pill.owner {
+            background: var(--red-soft);
+            color: var(--red);
+        }
+
+        .role-pill.staff {
+            background: rgba(0, 113, 227, 0.1);
+            color: var(--blue);
+        }
+
+        .role-pill.customer {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--ink-soft);
+        }
+
+        .flash {
+            padding: 13px 16px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            word-break: break-word;
+        }
+
+        .flash-success {
+            background: rgba(30, 142, 90, 0.08);
+            border: 1px solid rgba(30, 142, 90, 0.25);
+            color: var(--green);
+        }
+
+        .flash-error {
+            background: rgba(200, 16, 46, 0.08);
+            border: 1px solid rgba(200, 16, 46, 0.25);
+            color: var(--red);
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 28px;
+            margin-bottom: 20px;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .panel-sub {
+            font-size: 13px;
+            color: var(--ink-soft);
+            margin-bottom: 20px;
+        }
+
+        .field-group {
+            display: grid;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--ink-soft);
+        }
+
+        .field input,
+        .field select {
+            font-family: var(--font);
+            font-size: 14.5px;
+            padding: 10px 13px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: var(--bg);
+            outline: none;
+            transition: border-color 0.15s;
+            color: var(--ink);
+        }
+
+        .field input:focus,
+        .field select:focus {
+            border-color: var(--blue);
+        }
+
+        .field input:disabled,
+        .field select:disabled {
+            color: var(--ink-faint);
+            cursor: not-allowed;
+        }
+
+        .field-hint {
+            font-size: 12px;
+            color: var(--ink-faint);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font);
+            font-size: 13.5px;
+            font-weight: 600;
+            padding: 11px 22px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: none;
+            transition: opacity 0.15s, background 0.15s;
+        }
+
+        .btn-primary {
+            background: var(--ink);
+            color: var(--surface);
+        }
+
+        .btn-primary:hover {
+            opacity: 0.85;
+        }
+
+        .btn-secondary {
+            background: var(--bg);
+            color: var(--ink);
+            border: 1px solid var(--line);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        .btn-danger {
+            background: var(--red-soft);
+            color: var(--red);
+            border: 1px solid rgba(200, 16, 46, 0.2);
+        }
+
+        .btn-danger:hover {
+            background: rgba(200, 16, 46, 0.14);
+        }
+
+        .btn-danger:disabled,
+        .btn-secondary:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .panel-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .danger-zone {
+            border-color: rgba(200, 16, 46, 0.18);
+        }
+
+        form.inline {
+            display: inline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="topbar">
+        <a href="/admin/users" class="topbar-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Users
+        </a>
+        <div style="display:flex; align-items:baseline; gap:12px;">
+            <div class="topbar-title">Triangle Auto Works — Admin</div>
+        </div>
+        <div style="width:90px"></div>
+    </div>
+
+    <div class="shell">
+        <div class="identity-header">
+            <div class="user-avatar-lg">
+                <%= (targetUser.name || '?' ).charAt(0).toUpperCase() %>
+            </div>
+            <div>
+                <div class="identity-name">
+                    <%= targetUser.name %>
+                        <span
+                            class="role-pill <%= targetUser.role >= 3 ? 'owner' : targetUser.role === 2 ? 'staff' : 'customer' %>">
+                            <%= targetUser.role>= 3 ? 'Owner' : targetUser.role === 2 ? 'Staff' : 'Customer' %>
+                        </span>
+                </div>
+                <div class="identity-meta">
+                    Joined <%= targetUser.date ? new Date(targetUser.date).toLocaleDateString('en-US', { month: 'long' ,
+                        day: 'numeric' , year: 'numeric' }) : '—' %>
+                </div>
+            </div>
+        </div>
+
+        <% if (typeof successMessage !=='undefined' && successMessage && successMessage.length) { %>
+            <% successMessage.forEach(function(msg) { %>
+                <div class="flash flash-success">
+                    <%= msg %>
+                </div>
+                <% }) %>
+                    <% } %>
+                        <% if (typeof errorMessage !=='undefined' && errorMessage && errorMessage.length) { %>
+                            <% errorMessage.forEach(function(msg) { %>
+                                <div class="flash flash-error">
+                                    <%= msg %>
+                                </div>
+                                <% }) %>
+                                    <% } %>
+
+                                        <% const isSelf=String(targetUser._id)===String(user._id); %>
+                                            <% const isOwnerViewing=user.role>= 3; %>
+                                                <% const isLockedFromStaff=targetUser.role>= 3 && user.role < 3; %>
+
+                                                        <% if (isLockedFromStaff) { %>
+                                                            <div class="flash flash-error">This is an owner account.
+                                                                Only the owner can edit, reset the password for, or
+                                                                delete an owner account — you're viewing it read-only.
+                                                            </div>
+                                                            <% } %>
+
+                                                                <div class="panel">
+                                                                    <div class="panel-title">Profile</div>
+                                                                    <div class="panel-sub">
+                                                                        <% if (isLockedFromStaff) { %>
+                                                                            Read-only — owner accounts can't be edited
+                                                                            by staff.
+                                                                            <% } else { %>
+                                                                                Edit this user's contact details<% if
+                                                                                    (isOwnerViewing) { %> and role<% }
+                                                                                        %>.
+                                                                                        <% } %>
+                                                                    </div>
+                                                                    <form method="POST"
+                                                                        action="/admin/users/<%= targetUser._id %>">
+                                                                        <div class="field-group">
+                                                                            <div class="field">
+                                                                                <label>Name</label>
+                                                                                <input type="text" name="name"
+                                                                                    value="<%= targetUser.name %>"
+                                                                                    required minlength="3"
+                                                                                    <%=isLockedFromStaff ? 'disabled'
+                                                                                    : '' %>>
+                                                                            </div>
+                                                                            <div class="field">
+                                                                                <label>Email</label>
+                                                                                <input type="email" name="email"
+                                                                                    value="<%= targetUser.email %>"
+                                                                                    required <%=isLockedFromStaff
+                                                                                    ? 'disabled' : '' %>>
+                                                                            </div>
+                                                                            <div class="field">
+                                                                                <label>Phone</label>
+                                                                                <input type="tel" name="phone"
+                                                                                    value="<%= targetUser.phone %>"
+                                                                                    required minlength="10"
+                                                                                    <%=isLockedFromStaff ? 'disabled'
+                                                                                    : '' %>>
+                                                                            </div>
+                                                                            <div class="field">
+                                                                                <label>Role</label>
+                                                                                <% if (isOwnerViewing) { %>
+                                                                                    <select name="role" <%=(isSelf)
+                                                                                        ? 'disabled' : '' %>>
+                                                                                        <option value="1"
+                                                                                            <%=targetUser.role===1
+                                                                                            ? 'selected' : '' %>
+                                                                                            >Customer</option>
+                                                                                        <option value="2"
+                                                                                            <%=targetUser.role===2
+                                                                                            ? 'selected' : '' %>>Staff
+                                                                                        </option>
+                                                                                        <option value="3"
+                                                                                            <%=targetUser.role>= 3 ?
+                                                                                            'selected' : '' %>>Owner
+                                                                                        </option>
+                                                                                    </select>
+                                                                                    <% if (isSelf) { %>
+                                                                                        <div class="field-hint">You
+                                                                                            can't change your own role.
+                                                                                        </div>
+                                                                                        <% } %>
+                                                                                            <% } else { %>
+                                                                                                <input type="text"
+                                                                                                    value="<%= targetUser.role >= 3 ? 'Owner' : targetUser.role === 2 ? 'Staff' : 'Customer' %>"
+                                                                                                    disabled>
+                                                                                                <div class="field-hint">
+                                                                                                    Only the owner can
+                                                                                                    change roles.</div>
+                                                                                                <% } %>
+                                                                            </div>
+                                                                        </div>
+                                                                        <button type="submit" class="btn btn-primary"
+                                                                            <%=isLockedFromStaff ? 'disabled' : ''
+                                                                            %>>Save Changes</button>
+                                                                    </form>
+                                                                </div>
+
+                                                                <% if (!isLockedFromStaff) { %>
+                                                                    <% const
+                                                                        resetConfirmMsg='Generate a new temporary password for '
+                                                                        + targetUser.name
+                                                                        + '? Their current password will stop working immediately.'
+                                                                        ; %>
+                                                                        <div class="panel">
+                                                                            <div class="panel-title">Password</div>
+                                                                            <div class="panel-sub">Generate a temporary
+                                                                                password for this user. It will be shown
+                                                                                once — make sure to copy it and pass it
+                                                                                along securely.</div>
+                                                                            <form method="POST"
+                                                                                action="/admin/users/<%= targetUser._id %>/reset-password"
+                                                                                class="confirm-form"
+                                                                                data-confirm="<%= resetConfirmMsg %>">
+                                                                                <button type="submit"
+                                                                                    class="btn btn-secondary">Reset
+                                                                                    Password</button>
+                                                                            </form>
+                                                                        </div>
+                                                                        <% } %>
+
+                                                                            <% const canDelete=!isSelf &&
+                                                                                !isLockedFromStaff; %>
+                                                                                <% const
+                                                                                    deleteConfirmMsg='Permanently delete '
+                                                                                    + targetUser.name
+                                                                                    + '? This cannot be undone.' ; %>
+                                                                                    <% if (!isLockedFromStaff) { %>
+                                                                                        <div class="panel danger-zone">
+                                                                                            <div class="panel-title">
+                                                                                                Danger Zone</div>
+                                                                                            <div class="panel-sub">
+                                                                                                Permanently delete this
+                                                                                                user's account. This
+                                                                                                cannot be undone.</div>
+                                                                                            <div class="panel-row">
+                                                                                                <form method="POST"
+                                                                                                    action="/admin/users/<%= targetUser._id %>/delete"
+                                                                                                    class="confirm-form"
+                                                                                                    data-confirm="<%= deleteConfirmMsg %>">
+                                                                                                    <button
+                                                                                                        type="submit"
+                                                                                                        class="btn btn-danger"
+                                                                                                        <%=canDelete
+                                                                                                        ? ''
+                                                                                                        : 'disabled'
+                                                                                                        %>>Delete
+                                                                                                        User</button>
+                                                                                                </form>
+                                                                                                <% if (isSelf) { %>
+                                                                                                    <div
+                                                                                                        class="field-hint">
+                                                                                                        You can't delete
+                                                                                                        your own
+                                                                                                        account.</div>
+                                                                                                    <% } %>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <% } %>
+    </div>
+
+    <script>
+        document.querySelectorAll('.confirm-form').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                var message = form.getAttribute('data-confirm');
+                if (message && !window.confirm(message)) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

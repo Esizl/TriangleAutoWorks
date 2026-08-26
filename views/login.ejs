@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log In — Triangle Auto Works</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/css/booking.css">
+    <link rel="stylesheet" href="/css/auth.css">
+</head>
+
+<body>
+
+    <nav>
+        <a href="/" class="nav-logo">
+            <svg width="36" height="36" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"
+                style="margin-right:0">
+                <polygon points="20,2 38,36 2,36" fill="none" stroke="#C8102E" stroke-width="2.5" />
+                <text x="20" y="32" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="18"
+                    fill="#C0C0C0">TA</text>
+            </svg>
+            <div class="nav-wordmark" style="margin-left:10px">
+                Triangle
+                <span>Auto Works</span>
+            </div>
+        </a>
+        <a href="/" class="nav-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back to Site
+        </a>
+    </nav>
+
+    <div class="auth-layout">
+        <div class="auth-card">
+
+            <div class="step-eyebrow">Account</div>
+            <h2 class="step-title">Welcome Back</h2>
+            <div class="red-rule"></div>
+
+            <% if (typeof errors !== 'undefined' && errors && errors.length > 0) { %>
+                <% errors.forEach(function (err) { %>
+                    <div class="auth-error-banner"><%= err.message %></div>
+                <% }) %>
+            <% } %>
+
+            <!-- Flash-style success/error banners for parity with the
+                 other auth flows in this app (e.g. req.flash messages).
+                 Only rendered if the corresponding local was actually
+                 passed in — connect-flash locals are usually empty
+                 strings/arrays rather than undefined, so check for
+                 truthiness/non-empty rather than typeof alone. -->
+            <% if (typeof successMessage !== 'undefined' && successMessage) { %>
+                <% successMessage.forEach(function (err) { %>
+                    <div class="auth-success-banner"><%= successMessage %></div>
+                <% }) %>
+            <% } %>
+            <% if (typeof errorMessage !== 'undefined' && errorMessage) { %>
+                <% errorMessage.forEach(function (err) { %>
+                    <div class="auth-error-banner"><%= errorMessage %></div>
+                <% }) %>
+            <% } %>
+
+            <form id="loginForm" method="POST" action="/auth/login" novalidate>
+
+                <div class="field-group cols-1">
+                    <div class="field" id="f-login-email">
+                        <label>Email</label>
+                        <input type="email" id="loginEmail" name="email" placeholder="you@email.com"
+                            autocomplete="email" oninput="clearFieldError('f-login-email')">
+                        <div class="field-error">Please enter a valid email address.</div>
+                    </div>
+                </div>
+
+                <div class="field-group cols-1">
+                    <div class="field" id="f-login-password">
+                        <label>Password</label>
+                        <div class="password-field-row">
+                            <input type="password" id="loginPassword" name="password" placeholder="Enter your password"
+                                autocomplete="current-password" oninput="clearFieldError('f-login-password')">
+                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('loginPassword', this)" aria-label="Show password">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="field-error">Please enter your password.</div>
+                    </div>
+                </div>
+
+                <div class="auth-row-between">
+                    <label class="auth-checkbox-label">
+                        <input type="checkbox" id="rememberMe" name="rememberMe">
+                        <span>Remember me</span>
+                    </label>
+                    <a href="/forgot-password" class="auth-inline-link">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="btn-primary auth-submit-btn" id="loginSubmitBtn">
+                    Log In
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                </button>
+
+            </form>
+
+            <div class="auth-divider"><span>New to Triangle Auto Works?</span></div>
+
+            <a href="/signup" class="btn-ghost auth-secondary-btn">Create an Account</a>
+
+        </div>
+    </div>
+
+    <script src="/js/auth.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function (e) {
+            if (!validateLoginForm()) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+
+</html>

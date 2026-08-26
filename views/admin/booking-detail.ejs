@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= booking.contact?.firstName %> <%= booking.contact?.lastName %> — Triangle Auto Works</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #FAFAFA;
+            --surface: #FFFFFF;
+            --ink: #1D1D1F;
+            --ink-soft: #6E6E73;
+            --ink-faint: #AEAEB2;
+            --line: rgba(0,0,0,0.07);
+            --red: #C8102E;
+            --red-soft: rgba(200,16,46,0.08);
+            --amber: #E8B339;
+            --amber-soft: rgba(232,179,57,0.10);
+            --blue: #0071E3;
+            --blue-soft: rgba(0,113,227,0.08);
+            --green: #1E8E5A;
+            --green-soft: rgba(30,142,90,0.08);
+            --gray: #98989D;
+            --radius: 14px;
+            --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+            --mono: 'Roboto Mono', monospace;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { -webkit-font-smoothing: antialiased; }
+        body {
+            background: var(--bg);
+            color: var(--ink);
+            font-family: var(--font);
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(250,250,250,0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--line);
+            padding: 0 32px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .back-link {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--ink-soft);
+            text-decoration: none;
+            font-size: 13.5px;
+            font-weight: 500;
+        }
+        .back-link:hover { color: var(--ink); }
+
+        .shell {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 44px 32px 120px;
+        }
+
+        /* ── HERO ── */
+        .hero {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 36px;
+            gap: 20px;
+        }
+        .hero h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 4px;
+        }
+        .hero-sub {
+            color: var(--ink-soft);
+            font-size: 14.5px;
+        }
+        .hero-sub a { color: var(--blue); text-decoration: none; }
+
+        .status-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .status-select-wrap {
+            position: relative;
+        }
+        select#statusSelect {
+            appearance: none;
+            -webkit-appearance: none;
+            font-family: var(--font);
+            font-size: 13.5px;
+            font-weight: 600;
+            border: none;
+            border-radius: 100px;
+            padding: 7px 30px 7px 14px;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236E6E73' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+        select#statusSelect.new { background-color: var(--amber-soft); color: #9A7414; }
+        select#statusSelect.contacted { background-color: var(--blue-soft); color: var(--blue); }
+        select#statusSelect.confirmed { background-color: var(--green-soft); color: var(--green); }
+        select#statusSelect.completed { background-color: rgba(152,152,157,0.12); color: var(--ink-soft); }
+        select#statusSelect.cancelled { background-color: var(--red-soft); color: var(--red); }
+        #statusSaved {
+            font-size: 12.5px;
+            color: var(--green);
+            font-weight: 500;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        #statusSaved.show { opacity: 1; }
+
+        /* ── SECTION ── */
+        .section {
+            margin-bottom: 32px;
+        }
+        .section-title {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--ink-faint);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            margin-bottom: 10px;
+            padding-left: 2px;
+        }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+        }
+        .field-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 16px;
+            padding: 13px 18px;
+            border-bottom: 1px solid var(--line);
+            font-size: 14.5px;
+        }
+        .card .field-row:last-child { border-bottom: none; }
+        .field-key { color: var(--ink-soft); flex-shrink: 0; }
+        .field-val { color: var(--ink); font-weight: 500; text-align: right; }
+        .field-val.muted { color: var(--ink-soft); font-weight: 400; }
+        .field-val a { color: var(--blue); text-decoration: none; font-weight: 500; }
+
+        .badge-inline {
+            display: inline-block;
+            font-size: 11.5px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 100px;
+            background: var(--amber-soft);
+            color: #9A7414;
+        }
+
+        /* ── TECH SHEET (work order styling) ── */
+        .tech-sheet {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 20px 22px;
+            font-family: var(--mono);
+        }
+        .tech-line {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 7px 0;
+            font-size: 13.5px;
+            border-bottom: 1px dashed rgba(0,0,0,0.08);
+        }
+        .tech-line:last-of-type { border-bottom: none; }
+        .tech-line-label { color: var(--ink-soft); }
+        .tech-line-label .part-num { color: var(--ink-faint); font-size: 12px; }
+        .tech-line-price { color: var(--ink); font-weight: 500; }
+        .tech-divider {
+            border-top: 1px solid var(--line);
+            margin: 10px 0;
+        }
+        .tech-total {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 12px;
+            font-family: var(--font);
+            font-size: 16px;
+            font-weight: 700;
+        }
+        .tools-wrap {
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid var(--line);
+            font-family: var(--font);
+        }
+        .tools-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--ink-faint);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 10px;
+        }
+        .tools-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+        }
+        .tool-chip {
+            background: var(--bg);
+            border: 1px solid var(--line);
+            color: var(--ink-soft);
+            font-size: 12.5px;
+            padding: 5px 11px;
+            border-radius: 100px;
+        }
+
+        .mileage-flag {
+            font-family: var(--font);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--ink-soft);
+            background: var(--bg);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 9px 12px;
+            margin-bottom: 14px;
+        }
+        .mileage-flag.is-high {
+            color: #9A7414;
+            background: var(--amber-soft);
+            border-color: rgba(232,179,57,0.3);
+        }
+
+        /* ── NOTES ── */
+        .notes-card {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            font-size: 14.5px;
+            color: var(--ink);
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        a:focus-visible, select:focus-visible, button:focus-visible {
+            outline: 2px solid var(--blue);
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <a class="back-link" href="/admin">
+            <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M6 1L1 6L6 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Dashboard
+        </a>
+        <span style="color:var(--line); margin: 0 4px;">/</span>
+        <a class="back-link" href="/admin/bookings">
+            <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M6 1L1 6L6 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Bookings
+        </a>
+    </div>
+
+    <div class="shell">
+        <div class="hero">
+            <div>
+                <h1><%= booking.contact?.firstName %> <%= booking.contact?.lastName %></h1>
+                <div class="hero-sub">
+                    <a href="tel:<%= (booking.contact?.phone || '').replace(/\D/g,'') %>"><%= booking.contact?.phone %></a>
+                    &nbsp;·&nbsp;
+                    Submitted <%= new Date(booking.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %>
+                </div>
+            </div>
+            <div class="status-control">
+                <span id="statusSaved">Saved</span>
+                <div class="status-select-wrap">
+                    <select id="statusSelect" class="<%= booking.status %>">
+                        <% ['new','contacted','confirmed','completed','cancelled'].forEach(s => { %>
+                            <option value="<%= s %>" <%= booking.status === s ? 'selected' : '' %>><%= s.charAt(0).toUpperCase() + s.slice(1) %></option>
+                        <% }) %>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Appointment</div>
+            <div class="card">
+                <div class="field-row">
+                    <span class="field-key">When</span>
+                    <span class="field-val">
+                        <%= booking.preferredDate ? new Date(booking.preferredDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : '—' %>
+                        <% if (booking.firstTimeCustomer) { %> <span class="badge-inline">First-time</span><% } %>
+                    </span>
+                </div>
+                <div class="field-row">
+                    <span class="field-key">Window</span>
+                    <span class="field-val"><%= booking.preferredTime || '—' %></span>
+                </div>
+                <div class="field-row">
+                    <span class="field-key">Location</span>
+                    <span class="field-val"><%= booking.locationType %></span>
+                </div>
+                <div class="field-row">
+                    <span class="field-key">Address</span>
+                    <span class="field-val">
+                        <a href="https://maps.google.com/?q=<%= encodeURIComponent(booking.serviceAddress) %>" target="_blank"><%= booking.serviceAddress %></a>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Vehicle</div>
+            <div class="card">
+                <% if (booking.vehicle?.vinMode === 'manual') { %>
+                    <div class="field-row">
+                        <span class="field-key">Vehicle</span>
+                        <span class="field-val"><%= booking.vehicle?.year %> <%= booking.vehicle?.make %> <%= booking.vehicle?.model %></span>
+                    </div>
+                <% } else { %>
+                    <div class="field-row">
+                        <span class="field-key">VIN</span>
+                        <span class="field-val"><%= booking.vehicle?.vin %></span>
+                    </div>
+                    <div class="field-row">
+                        <span class="field-key">Decoded</span>
+                        <span class="field-val"><%= booking.vehicle?.year %> <%= booking.vehicle?.make %> <%= booking.vehicle?.model %></span>
+                    </div>
+                <% } %>
+                <% if (booking.vehicle?.vehicleType) { %>
+                <div class="field-row">
+                    <span class="field-key">Type</span>
+                    <span class="field-val muted"><%= booking.vehicle.vehicleType %></span>
+                </div>
+                <% } %>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Service</div>
+            <div class="card">
+                <div class="field-row">
+                    <span class="field-key">Category</span>
+                    <span class="field-val"><%= booking.category %></span>
+                </div>
+                <div class="field-row">
+                    <span class="field-key">Requested</span>
+                    <span class="field-val"><%= (booking.services || []).join(', ') %></span>
+                </div>
+            </div>
+        </div>
+
+        <% if (booking.category === 'Automotive' && booking.pricing) { %>
+        <div class="section">
+            <div class="section-title">Tech sheet</div>
+            <div class="tech-sheet">
+                <% (booking.services || []).forEach(svc => { %>
+                    <% const note = booking.serviceNotes?.[svc]; %>
+                    <% if (note && note.highMileage !== undefined) { %>
+                        <div class="mileage-flag <%= note.highMileage ? 'is-high' : '' %>">
+                            <%= svc %>: <%= note.highMileage ? 'High mileage (75,000+ mi)' : 'Not high mileage' %>
+                        </div>
+                    <% } %>
+                <% }) %>
+                <% (booking.parts || []).forEach(p => { %>
+                    <div class="tech-line">
+                        <span class="tech-line-label">
+                            <%= p.label %><%= p.qty > 1 ? ` ×${p.qty}` : '' %>
+                            <% if (p.partNumber) { %><br><span class="part-num"><%= p.partNumber %></span><% } %>
+                        </span>
+                        <span class="tech-line-price">$<%= p.lineTotal.toFixed(2) %></span>
+                    </div>
+                <% }) %>
+                <div class="tech-divider"></div>
+                <% (booking.labor || []).forEach(l => { %>
+                    <div class="tech-line">
+                        <span class="tech-line-label"><%= l.label %></span>
+                        <span class="tech-line-price">$<%= l.cost.toFixed(2) %></span>
+                    </div>
+                <% }) %>
+                <div class="tech-total">
+                    <span>Total</span>
+                    <span>$<%= booking.pricing.total.toFixed(2) %></span>
+                </div>
+
+                <% if (booking.toolsNeeded && booking.toolsNeeded.length) { %>
+                    <div class="tools-wrap">
+                        <div class="tools-label">Tools needed</div>
+                        <div class="tools-chips">
+                            <% booking.toolsNeeded.forEach(t => { %><span class="tool-chip"><%= t %></span><% }) %>
+                        </div>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+        <% } %>
+
+        <div class="section">
+            <div class="section-title">Contact</div>
+            <div class="card">
+                <div class="field-row">
+                    <span class="field-key">Email</span>
+                    <span class="field-val <%= booking.contact?.email ? '' : 'muted' %>"><%= booking.contact?.email || 'Not provided' %></span>
+                </div>
+                <% if (booking.hearAbout) { %>
+                <div class="field-row">
+                    <span class="field-key">Heard via</span>
+                    <span class="field-val muted"><%= booking.hearAbout %></span>
+                </div>
+                <% } %>
+            </div>
+        </div>
+
+        <% if (booking.notes) { %>
+        <div class="section">
+            <div class="section-title">Customer notes</div>
+            <div class="notes-card"><%= booking.notes %></div>
+        </div>
+        <% } %>
+    </div>
+
+    <script>
+        const select = document.getElementById('statusSelect');
+        const saved = document.getElementById('statusSaved');
+
+        select.addEventListener('change', async () => {
+            const status = select.value;
+            select.className = status;
+            try {
+                const res = await fetch('/api/booking/<%= booking._id %>/status', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                if (!res.ok) throw new Error('Update failed');
+                saved.classList.add('show');
+                setTimeout(() => saved.classList.remove('show'), 1800);
+            } catch (err) {
+                alert('Could not save status change. Try again.');
+            }
+        });
+    </script>
+</body>
+</html>

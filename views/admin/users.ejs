@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users — Triangle Auto Works</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #FAFAFA;
+            --surface: #FFFFFF;
+            --ink: #1D1D1F;
+            --ink-soft: #6E6E73;
+            --ink-faint: #AEAEB2;
+            --line: rgba(0,0,0,0.07);
+            --red: #C8102E;
+            --red-soft: rgba(200,16,46,0.08);
+            --amber: #E8B339;
+            --blue: #0071E3;
+            --green: #1E8E5A;
+            --gray: #98989D;
+            --radius: 14px;
+            --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { -webkit-font-smoothing: antialiased; }
+        body {
+            background: var(--bg);
+            color: var(--ink);
+            font-family: var(--font);
+            font-size: 15px;
+            line-height: 1.45;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(250,250,250,0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--line);
+            padding: 0 32px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .topbar-title {
+            font-size: 17px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+        .topbar-meta {
+            font-size: 13px;
+            color: var(--ink-soft);
+        }
+        .topbar-back {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--ink-soft);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: color 0.15s;
+        }
+        .topbar-back:hover { color: var(--ink); }
+        .topbar-back svg { width: 13px; height: 13px; stroke: currentColor; }
+
+        .shell {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 40px 32px 100px;
+        }
+
+        .page-heading {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 28px;
+        }
+        .page-heading h1 {
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .page-heading .count {
+            font-size: 14px;
+            color: var(--ink-soft);
+            font-weight: 500;
+        }
+
+        .flash {
+            padding: 13px 16px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        .flash-success { background: rgba(30,142,90,0.08); border: 1px solid rgba(30,142,90,0.25); color: var(--green); }
+        .flash-error { background: rgba(200,16,46,0.08); border: 1px solid rgba(200,16,46,0.25); color: var(--red); }
+
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            max-width: 320px;
+        }
+        .search-box form { display: flex; }
+        .search-box input {
+            width: 100%;
+            font-family: var(--font);
+            font-size: 14px;
+            padding: 9px 14px;
+            border: 1px solid var(--line);
+            border-radius: 100px;
+            background: var(--surface);
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .search-box input:focus { border-color: var(--blue); }
+
+        .filters {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .filters a {
+            text-decoration: none;
+            color: var(--ink-soft);
+            font-size: 13px;
+            font-weight: 500;
+            padding: 6px 14px;
+            border-radius: 100px;
+            transition: background 0.15s, color 0.15s;
+            white-space: nowrap;
+        }
+        .filters a:hover { background: rgba(0,0,0,0.04); }
+        .filters a.active {
+            background: var(--ink);
+            color: var(--surface);
+        }
+
+        .card-list {
+            background: var(--surface);
+            border-radius: var(--radius);
+            border: 1px solid var(--line);
+            overflow: hidden;
+        }
+        .user-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 20px;
+            text-decoration: none;
+            color: var(--ink);
+            border-bottom: 1px solid var(--line);
+            transition: background 0.12s;
+        }
+        .card-list .user-row:last-child { border-bottom: none; }
+        .user-row:hover { background: rgba(0,0,0,0.015); }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--red-soft);
+            color: var(--red);
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .row-main {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .row-identity {
+            flex: 1;
+            min-width: 0;
+        }
+        .row-name {
+            font-weight: 600;
+            font-size: 14.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .row-email {
+            font-size: 12.5px;
+            color: var(--ink-faint);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .row-phone {
+            font-size: 13px;
+            color: var(--ink-soft);
+            min-width: 120px;
+            display: none;
+        }
+        .role-pill {
+            font-size: 11.5px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 100px;
+            min-width: 72px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .role-pill.owner { background: var(--red-soft); color: var(--red); }
+        .role-pill.staff { background: rgba(0,113,227,0.1); color: var(--blue); }
+        .role-pill.customer { background: rgba(0,0,0,0.05); color: var(--ink-soft); }
+        .chevron {
+            color: var(--ink-faint);
+            flex-shrink: 0;
+        }
+
+        @media (min-width: 740px) {
+            .row-phone { display: block; }
+        }
+
+        .empty {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 64px 24px;
+            text-align: center;
+            color: var(--ink-soft);
+            font-size: 14px;
+        }
+
+        a:focus-visible, .filters a:focus-visible {
+            outline: 2px solid var(--blue);
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <a href="/admin" class="topbar-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Dashboard
+        </a>
+        <div style="display:flex; align-items:baseline; gap:12px;">
+            <div class="topbar-title">Triangle Auto Works — Admin</div>
+            <div class="topbar-meta"><%= new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) %></div>
+        </div>
+        <div style="width:90px"></div>
+    </div>
+
+    <div class="shell">
+        <div class="page-heading">
+            <h1>Users</h1>
+            <span class="count"><%= users.length %> total</span>
+        </div>
+
+        <% if (typeof successMessage !== 'undefined' && successMessage && successMessage.length) { %>
+            <% successMessage.forEach(function(msg) { %>
+                <div class="flash flash-success"><%= msg %></div>
+            <% }) %>
+        <% } %>
+        <% if (typeof errorMessage !== 'undefined' && errorMessage && errorMessage.length) { %>
+            <% errorMessage.forEach(function(msg) { %>
+                <div class="flash flash-error"><%= msg %></div>
+            <% }) %>
+        <% } %>
+
+        <div class="controls-row">
+            <div class="search-box">
+                <form method="GET" action="/admin/users">
+                    <% if (currentRole && currentRole !== 'all') { %>
+                        <input type="hidden" name="role" value="<%= currentRole %>">
+                    <% } %>
+                    <input type="text" name="q" placeholder="Search name or email…" value="<%= currentQuery %>">
+                </form>
+            </div>
+            <div class="filters">
+                <% const roleOptions = [
+                    { key: 'all', label: 'All' },
+                    { key: '1', label: 'Customers' },
+                    { key: '2', label: 'Staff' },
+                    { key: '3', label: 'Owner' }
+                ]; %>
+                <% roleOptions.forEach(function(r) { %>
+                    <a href="/admin/users?role=<%= r.key %><%= currentQuery ? '&q=' + encodeURIComponent(currentQuery) : '' %>"
+                       class="<%= currentRole === r.key ? 'active' : '' %>">
+                        <%= r.label %>
+                    </a>
+                <% }); %>
+            </div>
+        </div>
+
+        <% if (!users || users.length === 0) { %>
+            <div class="empty">No users match this filter.</div>
+        <% } else { %>
+            <div class="card-list">
+                <% users.forEach(function(u) { %>
+                    <a class="user-row" href="/admin/users/<%= u._id %>">
+                        <div class="user-avatar"><%= (u.name || '?').charAt(0).toUpperCase() %></div>
+                        <span class="row-main">
+                            <span class="row-identity">
+                                <div class="row-name"><%= u.name %></div>
+                                <div class="row-email"><%= u.email %></div>
+                            </span>
+                            <span class="row-phone"><%= u.phone %></span>
+                        </span>
+                        <span class="role-pill <%= u.role >= 3 ? 'owner' : u.role === 2 ? 'staff' : 'customer' %>">
+                            <%= u.role >= 3 ? 'Owner' : u.role === 2 ? 'Staff' : 'Customer' %>
+                        </span>
+                        <svg class="chevron" width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M1 1L7 7L1 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </a>
+                <% }); %>
+            </div>
+        <% } %>
+    </div>
+</body>
+</html>

@@ -1,0 +1,31 @@
+{
+  "name": "triangleautoworks",
+  "version": "0.1.0",
+  "description": "",
+  "license": "ISC",
+  "author": "Hayden Fish",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
+    "child_process": "^1.0.2",
+    "connect-flash": "^0.1.1",
+    "ejs": "^3.1.10",
+    "esizluuid": "^1.0.6",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "express-session": "^1.18.2",
+    "he": "^1.2.0",
+    "mongoose": "^8.18.0",
+    "node-cache": "^5.1.2",
+    "node-mediainfo": "^1.0.3",
+    "nodemon": "^3.1.10",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
+    "puppeteer": "^24.16.0"
+  }
+}

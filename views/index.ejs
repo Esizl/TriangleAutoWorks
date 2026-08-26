@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Triangle Auto Works — Detailing · Tint · Automotive Services</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+        <link rel="stylesheet" href="/css/index.css">
+</head>
+
+<body>
+
+    <!-- NAV -->
+    <nav>
+        <a href="" class="nav-logo">
+            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="20,2 38,36 2,36" fill="none" stroke="#C8102E" stroke-width="2.5" />
+                <text x="20" y="32" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="18"
+                    fill="#C0C0C0">TA</text>
+            </svg>
+            <div class="nav-wordmark">
+                Triangle
+                <span>Auto Works</span>
+            </div>
+        </a>
+        <ul class="nav-links">
+            <li><a href="#services">Services</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#bundles">Packages</a></li>
+            <% if (user) { %>
+                <li class="nav-account" id="navAccount">
+                    <button class="nav-account-trigger" onclick="toggleAccountMenu(event)">
+                        <span class="nav-account-avatar"><%= user.name.charAt(0).toUpperCase() %></span>
+                        <%= user.name.split(' ')[0] %>
+                        <svg class="nav-account-chevron" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="nav-account-menu">
+                        <div class="nav-account-name"><%= user.name %></div>
+                        <div class="nav-account-email"><%= user.email %></div>
+                        <a href="/settings">Settings</a>
+                        <% if (user.role >= 2) { %>
+                            <a href="/admin">Admin Dashboard</a>
+                        <% } %>
+                        <a href="/auth/logout" class="nav-account-logout">Logout</a>
+                    </div>
+                </li>
+            <% } else { %>
+                <li><a href="/login">Login</a></li>
+            <% } %>
+            <li><a href="/booking" class="nav-cta">Book Now</a></li>
+            <!-- <li><a href="tel:7326478703" class="nav-cta">Call Now</a></li> -->
+        </ul>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <!-- SVG abstract car outline -->
+        <svg class="hero-car" viewBox="0 0 780 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+                d="M40 220 Q80 220 120 180 L200 100 Q240 60 320 50 L520 45 Q620 45 680 100 L740 160 Q760 180 760 210 L760 225 L40 225 Z"
+                stroke="#C0C0C0" stroke-width="1.5" fill="none" />
+            <ellipse cx="180" cy="228" rx="45" ry="20" stroke="#C0C0C0" stroke-width="1.5" fill="none" />
+            <ellipse cx="600" cy="228" rx="45" ry="20" stroke="#C0C0C0" stroke-width="1.5" fill="none" />
+            <path d="M200 100 L210 60 L490 55 L520 45" stroke="#C0C0C0" stroke-width="1" fill="none" />
+            <path d="M120 175 L380 170 L500 165 L680 175" stroke="#C0C0C0" stroke-width="0.75" fill="none"
+                opacity="0.5" />
+            <line x1="380" y1="50" x2="380" y2="170" stroke="#C0C0C0" stroke-width="0.5" opacity="0.3" />
+            <path d="M280 60 Q310 40 360 38 L420 38 Q470 40 490 55" stroke="#C8102E" stroke-width="1" fill="none"
+                opacity="0.6" />
+        </svg>
+
+        <div class="hero-eyebrow">Raleigh, NC · Mobile Service Available</div>
+        <div class="hero-rule"></div>
+        <h1 class="hero-headline">
+            Cleaner.<br>
+            Sharper.<br>
+            <em>Better.</em>
+        </h1>
+        <p class="hero-sub">Detailing &nbsp;·&nbsp; <strong>Tint</strong> &nbsp;·&nbsp; Automotive Services</p>
+        <div class="hero-actions">
+            <a href="/booking" class="btn-primary">
+                <!-- <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.7A2 2 0 012.18 1h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 8.09a16 16 0 006 6l.56-.56a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
+                </svg> -->
+                Book Now
+            </a>
+            <a href="#services" class="btn-ghost">View Services</a>
+        </div>
+
+        <div class="hero-info">
+            <div class="hero-stat">
+                <div class="hero-stat-val">3<span>+</span></div>
+                <div class="hero-stat-label">Service Categories</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-val">$45<span>+</span></div>
+                <div class="hero-stat-label">Starting Price</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-val">5<span>✦</span></div>
+                <div class="hero-stat-label">First-Timer Specials</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-val">WE COME<span> TO YOU</span></div>
+                <div class="hero-stat-label">Mobile · Home · Office</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SERVICES -->
+    <section id="services" class="services">
+        <div class="section-label">What We Do</div>
+        <h2 class="section-title">One Stop.<br>Every Vehicle.</h2>
+        <div class="red-rule"></div>
+        <div class="services-grid">
+            <!-- Detailing -->
+            <div class="service-col">
+                <svg class="service-icon" viewBox="0 0 48 48" fill="none" stroke="#C8102E" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="20" width="40" height="18" rx="4" />
+                    <path d="M8 20 L14 10 L34 10 L40 20" />
+                    <circle cx="13" cy="38" r="4" />
+                    <circle cx="35" cy="38" r="4" />
+                    <path d="M4 28 Q24 22 44 28" />
+                </svg>
+                <div class="service-col-title">Detailing</div>
+                <ul class="service-list">
+                    <li>Basic Wash</li>
+                    <li>Interior Detail</li>
+                    <li>Exterior Detail</li>
+                    <li>Full Detail</li>
+                    <li>Ceramic Coatings</li>
+                    <li>Paint Decontamination</li>
+                </ul>
+            </div>
+            <!-- Tint -->
+            <div class="service-col">
+                <svg class="service-icon" viewBox="0 0 48 48" fill="none" stroke="#C8102E" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="6" y="12" width="36" height="24" rx="2" />
+                    <line x1="6" y1="24" x2="42" y2="24" />
+                    <path d="M6 12 L42 12 L42 18 Q24 14 6 18 Z" fill="rgba(200,16,46,0.15)" stroke="none" />
+                    <path d="M14 36 L34 36 L36 42 L12 42 Z" />
+                </svg>
+                <div class="service-col-title">Tint</div>
+                <ul class="service-list">
+                    <li>Standard Window Tint</li>
+                    <li>Carbon Tint</li>
+                    <li>Ceramic Tint</li>
+                    <li>Windshield Tint</li>
+                    <li>Tint Removal</li>
+                </ul>
+            </div>
+            <!-- Auto Services -->
+            <div class="service-col">
+                <svg class="service-icon" viewBox="0 0 48 48" fill="none" stroke="#C8102E" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="24" cy="24" r="10" />
+                    <circle cx="24" cy="24" r="4" />
+                    <path d="M24 8 L24 14 M24 34 L24 40 M8 24 L14 24 M34 24 L40 24" />
+                    <path d="M12 12 L16.2 16.2 M31.8 31.8 L36 36 M36 12 L31.8 16.2 M16.2 31.8 L12 36" />
+                </svg>
+                <div class="service-col-title">Automotive</div>
+                <ul class="service-list">
+                    <li>Oil Changes</li>
+                    <li>Brake Services</li>
+                    <li>Tire Rotation &amp; Balance</li>
+                    <li>Mount &amp; Balance</li>
+                    <li>Diagnostics</li>
+                    <li>General Maintenance</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRICING -->
+    <section id="pricing" class="pricing">
+        <div class="section-label">Transparent Pricing</div>
+        <h2 class="section-title">Starting Prices</h2>
+        <div class="pricing-tabs">
+            <button class="tab-btn active" onclick="switchTab('detailing', this)">Detailing</button>
+            <button class="tab-btn" onclick="switchTab('tint', this)">Tint</button>
+            <button class="tab-btn" onclick="switchTab('auto', this)">Automotive</button>
+        </div>
+
+        <div id="tab-detailing" class="tab-panel active">
+            <div class="price-card">
+                <div class="price-card-name">Basic Wash</div>
+                <div class="price-card-from">Starting at</div>
+                <div class="price-card-price">$45</div>
+                <ul class="price-card-features">
+                    <li>Exterior Hand Wash</li>
+                    <li>Tire Shine</li>
+                    <li>Window Cleaning</li>
+                </ul>
+            </div>
+            <div class="price-card">
+                <div class="price-card-name">Interior Detail</div>
+                <div class="price-card-from">Starting at</div>
+                <div class="price-card-price">$120</div>
+                <ul class="price-card-features">
+                    <li>Deep Clean Interior</li>
+                    <li>Steam Cleaning</li>
+                    <li>Seat &amp; Carpet Cleaning</li>
+                    <li>Odor Treatment</li>
+                </ul>
+            </div>
+            <div class="price-card">
+                <div class="price-card-name">Exterior Detail</div>
+                <div class="price-card-from">Starting at</div>
+                <div class="price-card-price">$130</div>
+                <ul class="price-card-features">
+                    <li>Hand Wash &amp; Dry</li>
+                    <li>Clay Bar Treatment</li>
+                    <li>Wax / Sealant</li>
+                    <li>Tire &amp; Trim Shine</li>
+                </ul>
+            </div>
+            <div class="price-card">
+                <div class="price-card-name">Full Detail</div>
+                <div class="price-card-from">Starting at</div>
+                <div class="price-card-price">$200</div>
+                <ul class="price-card-features">
+                    <li>Complete Interior</li>
+                    <li>Complete Exterior</li>
+                    <li>Paint Decontamination</li>
+                    <li>Spray Ceramic Protection</li>
+                </ul>
+            </div>
+            <div class="price-card">
+                <div class="price-card-name">Ceramic Coating</div>
+                <div class="price-card-from">Starting at</div>
+                <div class="price-card-price">$499</div>
+                <ul class="price-card-features">
+                    <li>1-Year Protection</li>
+                    <li>High Gloss Finish</li>
+                    <li>Hydrophobic Protection</li>
+                    <li>Paint Longevity</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="tab-tint" class="tab-panel">
+            <div class="price-card">
+                <div class="price-card-name">Standard Tint</div>
+                <div class="price-card-from">Starting at</div>
+                <div class="price-card-price">$180</div>
+                <ul class="price-card-features">
+                    <li>All Side &amp; Rear Windows</li>
+                </ul>
+            </div>
+            <div class="price-card">
+                <div class="price-card-name">Carbon Tint</div>
+                <div class="price-card-from">Starting at</div>
+                <div class="price-card-price">$250</div>
+                <ul class="price-card-features">
+                    <li>Carbon Film</li>
+                    <li>Heat Reduction</li>
+                </ul>
+            </div>
+            <div class="price-card">
+                <div class="price-card-name">Ceramic Tint</div>
+                <div class="price-card-from">Starting at</div>
+                <div class="price-card-price">$350</div>
+                <ul class="price-card-features">
+                    <li>Superior Heat Block</li>
+                    <li>No Signal Interference</li>
+                </ul>
+            </div>
+            <div class="price-card">
+                <div class="price-card-name">Windshield Tint</div>
+                <div class="price-card-from">Starting at</div>
+                <div class="price-card-price">$150</div>
+                <ul class="price-card-features">
+                    <li>UV &amp; Glare Reduction</li>
+                </ul>
+            </div>
+            <div class="price-card">
+                <div class="price-card-name">Tint Removal</div>
+                <div class="price-card-from">Starting at</div>
+                <div class="price-card-price">$75</div>
+                <ul class="price-card-features">
+                    <li>Safe Film Removal</li>
+                    <li>Adhesive Cleanup</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="tab-auto" class="tab-panel">
+            <div class="price-card">
+                <div class="price-card-name">Oil Change</div>
+                <div class="price-card-from">Starting at</div>
+                <div class="price-card-price">$65</div>
+                <ul class="price-card-features">
+                    <li>Up to 5 Qts ARGOS Oil</li>
+                    <li>Oil Filter Replacement</li>
+                    <li>Fluid &amp; Tire Pressure Check</li>
+                </ul>
+            </div>
+            <div class="price-card">
+                <div class="price-card-name">Premium Oil Change</div>
+                <div class="price-card-from">Starting at</div>
+                <div class="price-card-price">$75</div>
+                <ul class="price-card-features">
+                    <li>Pennzoil / Valvoline / Mobil 1</li>
+                    <li>Premium Oil Filter</li>
+                    <li>Fluid Check</li>
+                </ul>
+            </div>
+            <div class="price-card">
+                <div class="price-card-name">Brake Service</div>
+                <div class="price-card-from">Starting at</div>
+                <div class="price-card-price">$149</div>
+                <ul class="price-card-features">
+                    <li>Brake Inspection</li>
+                    <li>Pad Replacement</li>
+                    <li>Rotor Replacement</li>
+                </ul>
+            </div>
+            <div class="price-card">
+                <div class="price-card-name">Tire Rotation</div>
+                <div class="price-card-from">Starting at</div>
+                <div class="price-card-price">$75</div>
+                <ul class="price-card-features">
+                    <li>Rotation &amp; Balance</li>
+                    <li>Tire Pressure Check</li>
+                    <li>Visual Inspection</li>
+                </ul>
+            </div>
+            <div class="price-card">
+                <div class="price-card-name">Mount &amp; Balance</div>
+                <div class="price-card-from">Starting at</div>
+                <div class="price-card-price">$120</div>
+                <ul class="price-card-features">
+                    <li>4 Tires</li>
+                    <li>Mount &amp; Balance</li>
+                </ul>
+            </div>
+            <div class="price-card">
+                <div class="price-card-name">Diagnostics</div>
+                <div class="price-card-from">Starting at</div>
+                <div class="price-card-price">$100</div>
+                <ul class="price-card-features">
+                    <li>Check Engine Light Scan</li>
+                    <li>System Scan</li>
+                    <li>Diagnostic Report</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- SPECIALS STRIP -->
+    <div class="specials">
+        <div class="specials-inner">
+            <div class="specials-label">First-Timer<br>Specials</div>
+            <div class="specials-divider"></div>
+            <div class="specials-grid">
+                <div class="special-item">
+                    <div class="special-amount">$10 OFF</div>
+                    <div class="special-desc">Any Oil Change</div>
+                </div>
+                <div class="special-item">
+                    <div class="special-amount">10% OFF</div>
+                    <div class="special-desc">Any Detail Package</div>
+                </div>
+                <div class="special-item">
+                    <div class="special-amount">$25 OFF</div>
+                    <div class="special-desc">Any Brake Service</div>
+                </div>
+                <div class="special-item">
+                    <div class="special-amount">$25 OFF</div>
+                    <div class="special-desc">Ceramic Tint</div>
+                </div>
+                <div class="special-item">
+                    <div class="special-amount">$50 OFF</div>
+                    <div class="special-desc">Full Detail + Tint Bundle</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BUNDLES -->
+    <section id="bundles" class="bundles">
+        <div class="section-label">Bundle &amp; Save</div>
+        <h2 class="section-title">Package Deals</h2>
+        <div class="red-rule"></div>
+        <div class="bundles-grid">
+            <div class="bundle-card">
+                <div class="bundle-badge">Bronze</div>
+                <div class="bundle-name">Bronze Package</div>
+                <div class="bundle-price">$225</div>
+                <ul class="bundle-includes">
+                    <li>Full Detail</li>
+                    <li>Interior Protection</li>
+                </ul>
+                <a href="tel:7326478703" class="bundle-btn">Book This Package</a>
+            </div>
+            <div class="bundle-card">
+                <div class="bundle-badge">Silver</div>
+                <div class="bundle-name">Silver Package</div>
+                <div class="bundle-price">$399</div>
+                <ul class="bundle-includes">
+                    <li>Full Detail</li>
+                    <li>Standard Tint</li>
+                </ul>
+                <a href="tel:7326478703" class="bundle-btn">Book This Package</a>
+            </div>
+            <div class="bundle-card featured">
+                <div class="bundle-badge">Most Popular — Gold</div>
+                <div class="bundle-name">Gold Package</div>
+                <div class="bundle-price">$549</div>
+                <ul class="bundle-includes">
+                    <li>Full Detail</li>
+                    <li>Ceramic Tint</li>
+                    <li>Premium Oil Change</li>
+                </ul>
+                <a href="tel:7326478703" class="bundle-btn">Book This Package</a>
+            </div>
+            <div class="bundle-card">
+                <div class="bundle-badge">Ultimate</div>
+                <div class="bundle-name">Ultimate Package</div>
+                <div class="bundle-price">$799<small>+</small></div>
+                <ul class="bundle-includes">
+                    <li>Ceramic Coating</li>
+                    <li>Ceramic Tint</li>
+                    <li>Premium Oil Change</li>
+                    <li>Tire Rotation &amp; Balance</li>
+                </ul>
+                <a href="/booking" class="bundle-btn">Book This Package</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- MOBILE CALLOUT -->
+    <div id="mobile" class="mobile-callout">
+        <div>
+            <div class="section-label">Mobile Service</div>
+            <h2 class="mobile-callout-headline">
+                We Come
+                <span>To You.</span>
+            </h2>
+            <p class="mobile-callout-body">
+                No drop-off, no wait rooms. We bring professional detailing, tinting, and maintenance directly to your
+                home, apartment, or office — anywhere in the Raleigh area.
+            </p>
+            <a href="/booking" class="btn-primary">Schedule a Mobile Visit</a>
+        </div>
+        <div class="callout-details">
+            <div class="callout-detail">
+                <div class="callout-detail-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                        <polyline points="9 22 9 12 15 12 15 22" />
+                    </svg>
+                </div>
+                <div class="callout-detail-text">
+                    <strong>Home</strong>
+                    We work in your driveway or parking spot.
+                </div>
+            </div>
+            <div class="callout-detail">
+                <div class="callout-detail-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <rect x="2" y="7" width="20" height="14" rx="2" />
+                        <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" />
+                    </svg>
+                </div>
+                <div class="callout-detail-text">
+                    <strong>Office</strong>
+                    Get your car done while you work.
+                </div>
+            </div>
+            <div class="callout-detail">
+                <div class="callout-detail-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                </div>
+                <div class="callout-detail-text">
+                    <strong>On Your Schedule</strong>
+                    Book by call, text, or DM on Instagram.
+                </div>
+            </div>
+            <div class="callout-detail">
+                <div class="callout-detail-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                    </svg>
+                </div>
+                <div class="callout-detail-text">
+                    <strong>Serving Raleigh &amp; Surrounding Areas</strong>
+                    Including surrounding communities in the Triangle.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER CTA -->
+    <div class="footer-cta">
+        <div class="section-label">Ready?</div>
+        <h2 class="footer-cta-title">Book Your Service</h2>
+        <p class="footer-cta-sub">Call · Text · DM — We're ready when you are.</p>
+        <div class="hero-actions" style="justify-content:center;">
+            <a href="/booking" class="btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.7A2 2 0 012.18 1h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 8.09a16 16 0 006 6l.56-.56a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
+                </svg>
+                732-647-8703
+            </a>
+            <a href="https://instagram.com/triangleautoworks919" target="_blank"
+                class="btn-ghost">@triangleautoworks919</a>
+        </div>
+
+        <div class="footer-contact">
+            <div class="footer-contact-item">
+                <div class="footer-contact-label">Phone / Text</div>
+                <a href="tel:7326478703" class="footer-contact-val">732-647-8703</a>
+            </div>
+            <div class="footer-contact-item">
+                <div class="footer-contact-label">Instagram</div>
+                <a href="https://instagram.com/triangleautoworks919" target="_blank"
+                    class="footer-contact-val">@triangleautoworks919</a>
+            </div>
+            <div class="footer-contact-item">
+                <div class="footer-contact-label">Service Area</div>
+                <div class="footer-contact-val">Raleigh, NC &amp; Surrounding</div>
+            </div>
+            <div class="footer-contact-item">
+                <div class="footer-contact-label">Availability</div>
+                <div class="footer-contact-val">By Appointment</div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">© 2025 Triangle Auto Works · All rights reserved · Raleigh, NC</div>
+    </div>
+
+    <script>
+        function switchTab(id, btn) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + id).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        // Scroll-fade for sections
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    e.target.style.opacity = '1';
+                    e.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.price-card, .bundle-card, .service-col, .callout-detail').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(16px)';
+            el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            observer.observe(el);
+        });
+    </script>
+
+    <script>
+        function toggleAccountMenu(e) {
+            e.stopPropagation();
+            document.getElementById('navAccount').classList.toggle('open');
+        }
+
+        document.addEventListener('click', function (e) {
+            const acct = document.getElementById('navAccount');
+            if (acct && !acct.contains(e.target)) {
+                acct.classList.remove('open');
+            }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                const acct = document.getElementById('navAccount');
+                if (acct) acct.classList.remove('open');
+            }
+        });
+</script>
+</body>
+
+</html>

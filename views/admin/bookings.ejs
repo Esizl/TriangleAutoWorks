@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookings — Triangle Auto Works</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #FAFAFA;
+            --surface: #FFFFFF;
+            --ink: #1D1D1F;
+            --ink-soft: #6E6E73;
+            --ink-faint: #AEAEB2;
+            --line: rgba(0,0,0,0.07);
+            --red: #C8102E;
+            --red-soft: rgba(200,16,46,0.08);
+            --amber: #E8B339;
+            --blue: #0071E3;
+            --green: #1E8E5A;
+            --gray: #98989D;
+            --radius: 14px;
+            --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { -webkit-font-smoothing: antialiased; }
+        body {
+            background: var(--bg);
+            color: var(--ink);
+            font-family: var(--font);
+            font-size: 15px;
+            line-height: 1.45;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(250,250,250,0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--line);
+            padding: 0 32px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .topbar-title {
+            font-size: 17px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+        .topbar-meta {
+            font-size: 13px;
+            color: var(--ink-soft);
+        }
+        .topbar-back {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--ink-soft);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: color 0.15s;
+        }
+        .topbar-back:hover { color: var(--ink); }
+        .topbar-back svg { width: 13px; height: 13px; stroke: currentColor; }
+
+        .shell {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 40px 32px 100px;
+        }
+
+        .page-heading {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 28px;
+        }
+        .page-heading h1 {
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .page-heading .count {
+            font-size: 14px;
+            color: var(--ink-soft);
+            font-weight: 500;
+        }
+
+        .filters {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 36px;
+            flex-wrap: wrap;
+        }
+        .filters a {
+            text-decoration: none;
+            color: var(--ink-soft);
+            font-size: 13px;
+            font-weight: 500;
+            padding: 6px 14px;
+            border-radius: 100px;
+            transition: background 0.15s, color 0.15s;
+        }
+        .filters a:hover { background: rgba(0,0,0,0.04); }
+        .filters a.active {
+            background: var(--ink);
+            color: var(--surface);
+        }
+
+        .group {
+            margin-bottom: 36px;
+        }
+        .group-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--ink-soft);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 10px;
+            padding-left: 4px;
+        }
+
+        .card-list {
+            background: var(--surface);
+            border-radius: var(--radius);
+            border: 1px solid var(--line);
+            overflow: hidden;
+        }
+        .booking-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            text-decoration: none;
+            color: var(--ink);
+            border-bottom: 1px solid var(--line);
+            transition: background 0.12s;
+        }
+        .card-list .booking-row:last-child { border-bottom: none; }
+        .booking-row:hover { background: rgba(0,0,0,0.015); }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .status-dot.new { background: var(--amber); }
+        .status-dot.contacted { background: var(--blue); }
+        .status-dot.confirmed { background: var(--green); }
+        .status-dot.completed { background: var(--gray); }
+        .status-dot.cancelled { background: var(--red); opacity: 0.6; }
+
+        .row-main {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .row-customer {
+            min-width: 150px;
+        }
+        .row-customer-name {
+            font-weight: 600;
+            font-size: 14.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .row-customer-phone {
+            font-size: 12.5px;
+            color: var(--ink-faint);
+        }
+        .row-vehicle {
+            flex: 1;
+            min-width: 0;
+            font-size: 14px;
+            color: var(--ink-soft);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .row-services {
+            font-size: 13px;
+            color: var(--ink-faint);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 220px;
+            display: none;
+        }
+        .row-time {
+            font-size: 13px;
+            color: var(--ink-soft);
+            text-align: right;
+            min-width: 92px;
+            flex-shrink: 0;
+        }
+        .row-total {
+            font-size: 14px;
+            font-weight: 600;
+            min-width: 64px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+        .chevron {
+            color: var(--ink-faint);
+            flex-shrink: 0;
+        }
+
+        @media (min-width: 740px) {
+            .row-services { display: block; }
+        }
+
+        .empty {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 64px 24px;
+            text-align: center;
+            color: var(--ink-soft);
+            font-size: 14px;
+        }
+
+        a:focus-visible, .filters a:focus-visible {
+            outline: 2px solid var(--blue);
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <a href="/admin" class="topbar-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Dashboard
+        </a>
+        <div style="display:flex; align-items:baseline; gap:12px;">
+            <div class="topbar-title">Triangle Auto Works — Admin</div>
+            <div class="topbar-meta"><%= new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) %></div>
+        </div>
+        <div style="width:90px"></div>
+    </div>
+
+    <div class="shell">
+        <div class="page-heading">
+            <h1>Bookings</h1>
+            <span class="count"><%= bookings.length %> total</span>
+        </div>
+
+        <% const statuses = ['all', 'new', 'contacted', 'confirmed', 'completed', 'cancelled']; %>
+        <div class="filters">
+            <% statuses.forEach(function(s) { %>
+                <a href="<%= s === 'all' ? '/admin/bookings' : '/admin/bookings?status=' + s %>"
+                   class="<%= currentStatus === s ? 'active' : '' %>">
+                    <%= s.charAt(0).toUpperCase() + s.slice(1) %>
+                </a>
+            <% }); %>
+        </div>
+
+        <% if (!bookings || bookings.length === 0) { %>
+            <div class="empty">No bookings match this filter yet.</div>
+        <% } else { %>
+            <%
+                var todayStr = new Date().toISOString().split('T')[0];
+                var today = new Date(todayStr + 'T00:00:00');
+                var weekOut = new Date(today);
+                weekOut.setDate(weekOut.getDate() + 7);
+
+                var groups = { today: [], thisWeek: [], later: [], past: [] };
+                bookings.forEach(function(b) {
+                    if (!b.preferredDate) { groups.later.push(b); return; }
+                    if (b.preferredDate === todayStr) { groups.today.push(b); return; }
+
+                    var d = new Date(b.preferredDate + 'T00:00:00');
+                    if (isNaN(d)) { groups.later.push(b); return; }
+                    if (d < today) { groups.past.push(b); }
+                    else if (d < weekOut) { groups.thisWeek.push(b); }
+                    else { groups.later.push(b); }
+                });
+            %>
+
+            <% function renderGroup(label, list) { %>
+                <% if (list.length > 0) { %>
+                    <div class="group">
+                        <div class="group-label"><%= label %></div>
+                        <div class="card-list">
+                            <% list.forEach(function(b) { %>
+                                <a class="booking-row" href="/admin/bookings/<%= b._id %>">
+                                    <span class="status-dot <%= b.status %>"></span>
+                                    <span class="row-main">
+                                        <span class="row-customer">
+                                            <div class="row-customer-name"><%= b.contact?.firstName %> <%= b.contact?.lastName %></div>
+                                            <div class="row-customer-phone"><%= b.contact?.phone %></div>
+                                        </span>
+                                        <span class="row-vehicle">
+                                            <% if (b.vehicle?.vinMode === 'manual') { %>
+                                                <%= b.vehicle?.year %> <%= b.vehicle?.make %> <%= b.vehicle?.model %>
+                                            <% } else { %>
+                                                VIN <%= (b.vehicle?.vin || '').slice(-6) %>
+                                            <% } %>
+                                        </span>
+                                        <span class="row-services"><%= (b.services || []).join(', ') %></span>
+                                    </span>
+                                    <span class="row-time">
+                                        <%= b.preferredTime ? b.preferredTime.replace(/\s*\(.*?\)/, '') : '—' %>
+                                    </span>
+                                    <span class="row-total"><%= b.pricing?.total ? '$' + b.pricing.total.toFixed(0) : '—' %></span>
+                                    <svg class="chevron" width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M1 1L7 7L1 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </a>
+                            <% }); %>
+                        </div>
+                    </div>
+                <% } %>
+            <% } %>
+
+            <% renderGroup('Today', groups.today); %>
+            <% renderGroup('This week', groups.thisWeek); %>
+            <% renderGroup('Later', groups.later); %>
+            <% renderGroup('Past', groups.past); %>
+        <% } %>
+    </div>
+</body>
+</html>
