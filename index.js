@@ -47,7 +47,7 @@ app.use('/settings', require('./routes/settings'))
 app.use('/admin', require('./routes/admin'))
 
 try {
-    app.listen(port)
+    app.listen(process.env.PORT || port)
     console.clear()
     console.log(`Server: Online\nPort: ${port}\nVersion: ${version}`)
 } catch (error) {
