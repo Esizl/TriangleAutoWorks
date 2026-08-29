@@ -89,4 +89,22 @@ router.post('/changePassword', ensureAuthenticated, async (req, res) => {
     }
 });
 
+const PartsCatalog = require('../models/PartsCatalog')
+const { generatePartsCatalogScript } = require('../services/generatePartsCatalogScript')
+
+router.get('/js/partsCatalog.js', async (req, res) => {
+    try {
+        const catalog = await PartsCatalog.getCatalog()
+        const script = generatePartsCatalogScript(catalog)
+        res.type('application/javascript').send(script)
+    } catch (err) {
+        // Loud failure: a broken catalog should not silently serve an
+        // empty/stale script that makes the booking form quietly show no
+        // oil brands. Fail the request visibly and log the real cause.
+        console.error('[partsCatalog.js] generation failed:', err)
+        res.status(500).type('application/javascript')
+            .send(`console.error(${JSON.stringify('Parts catalog failed to load: ' + err.message)});`)
+    }
+})
+
 module.exports = router;
