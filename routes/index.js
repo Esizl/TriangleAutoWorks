@@ -1,11 +1,11 @@
 const router = require('express').Router()
 const { ensureAuthenticated } = require('../config/ensureAuth')
+const { version } = require('../config/config.json')
 const User = require('../models/User')
-const axios = require('axios')
 
 // --- Home route ---
 router.get('/', async (req, res) => {
-    res.render('index')
+    res.render('index', { version })
 })
 
 router.get('/booking', async (req, res) => {

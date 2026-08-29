@@ -112,6 +112,10 @@
 
             </form>
 
+            <button type="button" id="passkeyLoginBtn" class="btn-ghost auth-secondary-btn">
+                Sign in with a passkey
+            </button>
+
             <div class="auth-divider"><span>New to Triangle Auto Works?</span></div>
 
             <a href="/signup" class="btn-ghost auth-secondary-btn">Create an Account</a>
@@ -120,6 +124,9 @@
     </div>
 
     <script src="/js/auth.js"></script>
+    <script src="/js/vendor/simplewebauthn-browser.js"></script>
+    <script src="/js/passkey-login.js"></script>
+    
     <script>
         document.getElementById('loginForm').addEventListener('submit', function (e) {
             if (!validateLoginForm()) {

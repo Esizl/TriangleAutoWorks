@@ -35,6 +35,7 @@ app.use((req, res, next) => {
     res.locals.errorMessage = req.flash('errorMessage')
     res.locals.error = req.flash('error')
     res.locals.user = req.user || null
+    res.locals.version = version
     next()
 })
 
@@ -45,6 +46,7 @@ app.use('/api', require('./routes/api'))
 app.use('/api/availability', require('./routes/availability'))
 app.use('/settings', require('./routes/settings'))
 app.use('/admin', require('./routes/admin'))
+app.use('/auth/webauthn', require('./routes/webauthn'))
 
 try {
     app.listen(process.env.PORT || port)

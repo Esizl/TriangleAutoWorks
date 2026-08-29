@@ -297,6 +297,13 @@
             </form>
         </div>
 
+        <div class="settings-card">
+            <h3>Passkeys</h3>
+            <p>Sign in without a password using Face ID, Touch ID, or a security key.</p>
+            <div id="passkeyList"></div>
+            <button type="button" id="addPasskeyBtn" class="btn-primary">Add a Passkey</button>
+        </div>
+
         <% if (user.role >= 2) { %>
             <div class="panel">
                 <div class="panel-title">Admin</div>
@@ -330,5 +337,8 @@
             </div>
         <% } %>
     </div>
+
+    <script src="/js/vendor/simplewebauthn-browser.js"></script>
+    <script src="/js/passkey-settings.js"></script>
 </body>
 </html>
