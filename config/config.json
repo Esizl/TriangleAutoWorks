@@ -5,7 +5,7 @@
     "version": "0.1.1"
   },
   "webauthn": {
-    "rpID": "TAW",
+    "rpID": "triangleautowork.com",
     "rpName": "Triangle Auto Works",
     "origin": "https://triangleautowork.com"
   }
