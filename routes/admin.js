@@ -659,125 +659,6 @@ router.post('/site/config', ensureAdmin, ensureOwner, async (req, res) => {
     }
 })
 
-// ---- Role gate --------------------------------------------------------
-// Matches your stated role system: 1 = customer, 2 = staff/admin, 3 = owner.
-// Adjust the property name (req.user.role) to whatever your auth middleware
-// actually sets — this assumes it's already on req.user by the time these
-// routes run (same as your other /admin/site/* editors).
-function requireRole(minRole) {
-    return (req, res, next) => {
-        if (!req.user) {
-            return res.status(401).json({ error: 'Not authenticated' });
-        }
-        if (req.user.role < minRole) {
-            return res.status(403).json({ error: 'Not authorized for this action' });
-        }
-        next();
-    };
-}
-
-// Strip owner-only fields before sending to staff-level users. Explicit
-// allow-list, not a delete-the-bad-fields blacklist — a new owner-only
-// field added later fails closed (hidden) instead of failing open (leaked).
-function sanitizeForRole(part, role) {
-    const obj = part.toObject ? part.toObject() : part;
-    if (role >= 3) return obj;
-    const { cost, ...rest } = obj;
-    return rest;
-}
-
-// ---- Page ---------------------------------------------------------------
-
-router.get('/site/parts', requireRole(2), (req, res) => {
-    res.render('admin/parts', { user: req.user });
-});
-
-// ---- API ------------------------------------------------------------
-
-// List, with optional ?category= and ?q= (matches partNumber or name)
-router.get('/api/parts', requireRole(2), async (req, res) => {
-    try {
-        const filter = {};
-        if (req.query.category) filter.category = req.query.category;
-        if (req.query.q) {
-            const q = req.query.q.trim();
-            filter.$or = [
-                { partNumber: new RegExp(q, 'i') },
-                { name: new RegExp(q, 'i') },
-            ];
-        }
-
-        const parts = await Part.find(filter).sort({ category: 1, name: 1 });
-        res.json(parts.map((p) => sanitizeForRole(p, req.user.role)));
-    } catch (err) {
-        // Loud failure: log the real error, tell the client something broke.
-        // Never swallow this and return an empty array — that's exactly the
-        // silent-fallback pattern that caused the earlier configurator bug.
-        console.error('[parts] list failed:', err);
-        res.status(500).json({ error: 'Failed to load parts catalog', detail: err.message });
-    }
-});
-
-router.post('/api/parts', requireRole(2), async (req, res) => {
-    try {
-        const { cost, ...rest } = req.body;
-        const payload = req.user.role >= 3 ? { ...rest, cost } : rest;
-
-        const part = await Part.create(payload);
-        res.status(201).json(sanitizeForRole(part, req.user.role));
-    } catch (err) {
-        if (err.code === 11000) {
-            return res.status(409).json({ error: `Part number "${req.body.partNumber}" already exists` });
-        }
-        if (err.name === 'ValidationError') {
-            return res.status(400).json({ error: 'Invalid part data', detail: err.message });
-        }
-        console.error('[parts] create failed:', err);
-        res.status(500).json({ error: 'Failed to create part', detail: err.message });
-    }
-});
-
-router.put('/api/parts/:id', requireRole(2), async (req, res) => {
-    try {
-        const { cost, ...rest } = req.body;
-        const payload = req.user.role >= 3 ? { ...rest, cost } : rest;
-
-        const part = await Part.findByIdAndUpdate(req.params.id, payload, {
-            new: true,
-            runValidators: true,
-        });
-        if (!part) {
-            return res.status(404).json({ error: 'Part not found' });
-        }
-        res.json(sanitizeForRole(part, req.user.role));
-    } catch (err) {
-        if (err.code === 11000) {
-            return res.status(409).json({ error: `Part number "${req.body.partNumber}" already exists` });
-        }
-        if (err.name === 'ValidationError') {
-            return res.status(400).json({ error: 'Invalid part data', detail: err.message });
-        }
-        console.error('[parts] update failed:', err);
-        res.status(500).json({ error: 'Failed to update part', detail: err.message });
-    }
-});
-
-// Delete is owner-only (role 3) — deletion from the live catalog can break
-// active bookings/configurator lookups, so this is intentionally stricter
-// than create/update.
-router.delete('/api/parts/:id', requireRole(3), async (req, res) => {
-    try {
-        const part = await Part.findByIdAndDelete(req.params.id);
-        if (!part) {
-            return res.status(404).json({ error: 'Part not found' });
-        }
-        res.json({ success: true });
-    } catch (err) {
-        console.error('[parts] delete failed:', err);
-        res.status(500).json({ error: 'Failed to delete part', detail: err.message });
-    }
-});
-
 // Section name -> the doc's array field name. Kept as an explicit
 // allow-list so a typo'd section in a request 404s loudly instead of
 // silently touching the wrong array.
@@ -805,7 +686,8 @@ function resolveSection(req, res) {
 router.get('/site/parts', ensureAdmin, ensureOwner, async (req, res) => {
     try {
         const catalog = await PartsCatalog.getCatalog()
-        res.render('admin/parts', { catalog })
+        const { VEHICLE_DATA } = loadVehicleData()
+        res.render('admin/parts', { catalog, vehicleData: VEHICLE_DATA })
     } catch (err) {
         console.error('[parts admin] failed to load catalog:', err)
         req.flash('errorMessage', 'Failed to load parts catalog.')

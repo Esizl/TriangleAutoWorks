@@ -12,7 +12,8 @@ const supplierSchema = new mongoose.Schema({
 
 const oilProductSchema = new mongoose.Schema({
     name: { type: String, required: true, trim: true },       // e.g. "ARGOS", "Valvoline Synthetic Blend" — the brand+grade display name
-    partNumber: { type: String, default: null },
+    quartPartNumber: { type: String, default: null },         // part number for a single quart
+    jugPartNumber: { type: String, default: null },           // part number for the 5-quart jug
     price: { type: Number, default: null },                   // per-quart top-off price
     jugPrice: { type: Number, default: null },                 // 5-quart jug price
     supplier: { type: String, default: null },                 // references a Supplier.key
@@ -20,7 +21,14 @@ const oilProductSchema = new mongoose.Schema({
     oilCategory: { type: String, enum: ['Conventional', 'Synthetic', null], default: null },
     tier: { type: String, enum: ['budget', 'premium', null], default: null },
     availability: { type: String, default: 'all' },
-    includesFreeFilter: { type: Boolean, default: false }
+    includesFreeFilter: { type: Boolean, default: false },
+    highMileage: { type: Boolean, default: false },            // true = formulated for 75k+ mile vehicles
+    // Empty array = universal (this product is offered regardless of the
+    // vehicle's recommended viscosity) — mirrors the compatibleMakes
+    // "no restriction listed = universal" convention on filterBrandSchema.
+    // Populate it only for products that are genuinely sold in specific
+    // viscosities you want to gate on.
+    viscosities: { type: [String], default: [] }
 })
 
 const filterBrandSchema = new mongoose.Schema({
@@ -34,10 +42,13 @@ const filterBrandSchema = new mongoose.Schema({
 })
 
 // Per-vehicle part-number/price/url override for a filter brand.
+// filterType distinguishes oil/engine/cabin filters — the same brand can
+// have a different part number for each type on the same vehicle.
 // year: null means "_default" (applies to every year of that model
 // unless a more specific year entry also exists).
 const filterOverrideSchema = new mongoose.Schema({
     brand: { type: String, required: true, trim: true },
+    filterType: { type: String, enum: ['oil', 'engine', 'cabin'], required: true, default: 'oil' },
     make: { type: String, required: true, trim: true },
     model: { type: String, required: true, trim: true },
     year: { type: Number, default: null },

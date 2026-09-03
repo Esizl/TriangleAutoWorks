@@ -1,6 +1,54 @@
 (function () {
   'use strict';
 
+  // Viscosity grades grouped by real-world use case, purely for a
+  // cleaner admin display/editing experience. This grouping has NO
+  // effect on booking-time compatibility matching — the configurator
+  // still checks the raw viscosities array for an exact match against
+  // the vehicle's recommended grade. This is presentation only.
+  const VISCOSITY_GROUPS = [
+    { key: 'popular', label: 'Popular', options: ['0W-16', '0W-20', '0W-30', '5W-20', '5W-30', '5W-40', '10W-30', '10W-40'] },
+    { key: 'racecar', label: 'Race Car', options: ['0W-40', '0W-50', '5W-50', '10W-60'] },
+    { key: 'heavyduty', label: 'Diesel', options: ['15W-40', '15W-50', '20W-50'] },
+    { key: 'ultrathin', label: 'Ultra-Thin', options: ['0W-8'] },
+  ];
+
+  // A product touching 3+ of the groups above is effectively "stocked
+  // in nearly everything" — collapsing that to one neutral pill instead
+  // of stacking every matching colored pill keeps the table readable.
+  // The full raw list is still available on hover.
+  const ALL_AROUND_GROUP_THRESHOLD = 3;
+
+  function formatViscosities(list) {
+    if (!list || list.length === 0) return '<span class="visc-pill visc-pill-any">Any</span>';
+
+    const matchedGroups = VISCOSITY_GROUPS.filter(group => {
+      const matchCount = list.filter(v => group.options.includes(v)).length;
+      if (matchCount === 0) return false;
+      // "Popular" is a large group (8 grades) — require a real majority
+      // before tagging it, so one stray popular grade on an otherwise
+      // narrow product doesn't earn the pill. Small groups: any match counts.
+      if (group.key === 'popular' && matchCount < 2) return false;
+      return true;
+    });
+
+    const fullListText = list.join(', ');
+
+    if (matchedGroups.length >= ALL_AROUND_GROUP_THRESHOLD) {
+      return `<span class="visc-pill visc-pill-all" title="${escapeHtml(fullListText)}">All-Around</span>`;
+    }
+
+    if (matchedGroups.length === 0) {
+      // Didn't clear any group's threshold (e.g. a single niche grade) —
+      // just show what's actually there as a plain pill.
+      return `<span class="visc-pill visc-pill-any" title="${escapeHtml(fullListText)}">${escapeHtml(fullListText)}</span>`;
+    }
+
+    return matchedGroups
+      .map(g => `<span class="visc-pill visc-pill-${g.key}" title="${escapeHtml(fullListText)}">${escapeHtml(g.label)}</span>`)
+      .join(' ');
+  }
+
   // Each section describes: its table columns, and the form fields for
   // the add/edit modal. One generic render/CRUD flow drives all seven —
   // adding an eighth section later just means adding a config entry here.
@@ -10,20 +58,26 @@
       columns: [
         { key: 'name', label: 'Name' },
         { key: 'tier', label: 'Tier' },
+        { key: 'quartPartNumber', label: 'Qt Part #' },
         { key: 'price', label: 'Price/qt', format: (v) => v != null ? `$${Number(v).toFixed(2)}` : '—' },
         { key: 'jugPrice', label: 'Jug Price', format: (v) => v != null ? `$${Number(v).toFixed(2)}` : '—' },
+        { key: 'highMileage', label: 'High Mileage', format: (v) => v ? 'Yes' : 'No' },
+        { key: 'viscosities', label: 'Viscosities', format: formatViscosities },
         { key: 'supplier', label: 'Supplier' },
       ],
       fields: [
         { key: 'name', label: 'Name (brand + grade)', type: 'text', required: true },
-        { key: 'partNumber', label: 'Part Number', type: 'text' },
+        { key: 'quartPartNumber', label: 'Quart Part Number', type: 'text' },
         { key: 'price', label: 'Per-quart price ($)', type: 'number', step: '0.01' },
+        { key: 'jugPartNumber', label: 'Jug (5qt) Part Number', type: 'text' },
         { key: 'jugPrice', label: '5-quart jug price ($)', type: 'number', step: '0.01' },
         { key: 'supplier', label: 'Supplier key', type: 'text', hint: 'Must match a key from the Suppliers tab.' },
         { key: 'url', label: 'Product URL', type: 'text' },
         { key: 'oilCategory', label: 'Oil Category', type: 'select', options: ['', 'Conventional', 'Synthetic'] },
         { key: 'tier', label: 'Tier', type: 'select', options: ['', 'budget', 'premium'] },
         { key: 'includesFreeFilter', label: 'Includes free filter with jug?', type: 'select', options: ['false', 'true'], boolValue: true },
+        { key: 'highMileage', label: 'High-mileage formula (75k+)?', type: 'select', options: ['false', 'true'], boolValue: true },
+        { key: 'viscosities', label: 'Available Viscosities', type: 'checklist', groups: VISCOSITY_GROUPS, hint: 'Leave all unchecked to offer this product regardless of the vehicle\'s recommended viscosity.' },
       ],
     },
     'filter-brands': {
@@ -45,6 +99,7 @@
       label: 'Filter Overrides',
       columns: [
         { key: 'brand', label: 'Brand' },
+        { key: 'filterType', label: 'Type' },
         { key: 'make', label: 'Make' },
         { key: 'model', label: 'Model' },
         { key: 'year', label: 'Year', format: (v) => v != null ? v : 'All years' },
@@ -52,8 +107,9 @@
       ],
       fields: [
         { key: 'brand', label: 'Filter Brand', type: 'text', required: true, hint: 'Must match a name from the Filter Brands tab.' },
-        { key: 'make', label: 'Make', type: 'text', required: true },
-        { key: 'model', label: 'Model', type: 'text', required: true },
+        { key: 'filterType', label: 'Filter Type', type: 'select', options: ['oil', 'engine', 'cabin'], required: true },
+        { key: 'make', label: 'Make', type: 'vehicle-make', required: true },
+        { key: 'model', label: 'Model', type: 'vehicle-model', required: true },
         { key: 'year', label: 'Year (optional)', type: 'number', hint: 'Leave blank to apply to all years of this model.' },
         { key: 'partNumber', label: 'Part Number', type: 'text' },
         { key: 'price', label: 'Price override ($, optional)', type: 'number', step: '0.01' },
@@ -124,6 +180,12 @@
   const modalTitle = document.getElementById('modalTitle');
   const formFields = document.getElementById('formFields');
   const itemForm = document.getElementById('itemForm');
+
+  // Vehicle make/model data, embedded into the page by the server
+  // (admin/parts.ejs sets window.VEHICLE_DATA before this script loads).
+  // Falls back to {} so this file never throws if it's ever loaded
+  // without that data being present.
+  const VEHICLE_DATA = window.VEHICLE_DATA || {};
 
   function showError(message) {
     errorBanner.textContent = message;
@@ -222,11 +284,95 @@
     }
   }
 
+  // Build the <option> list for every make in VEHICLE_DATA, alphabetized.
+  function makeOptionsHtml(currentVal) {
+    const makes = Object.keys(VEHICLE_DATA).sort((a, b) => a.localeCompare(b));
+    const opts = makes.map(m =>
+      `<option value="${escapeHtml(m)}" ${m === currentVal ? 'selected' : ''}>${escapeHtml(m)}</option>`
+    ).join('');
+    return `<option value="">Select Make</option>${opts}`;
+  }
+
+  // Build the <option> list for every model under a given make, alphabetized.
+  function modelOptionsHtml(make, currentVal) {
+    const models = (make && VEHICLE_DATA[make])
+      ? Object.keys(VEHICLE_DATA[make]).sort((a, b) => a.localeCompare(b))
+      : [];
+    const opts = models.map(m =>
+      `<option value="${escapeHtml(m)}" ${m === currentVal ? 'selected' : ''}>${escapeHtml(m)}</option>`
+    ).join('');
+    return `<option value="">${make ? 'Select Model' : 'Select a make first'}</option>${opts}`;
+  }
+
+  // Wired up after the form renders — when Make changes, repopulate the
+  // Model select from scratch (previous model selection is cleared,
+  // since it almost certainly doesn't belong to the new make).
+  function bindMakeModelCascade() {
+    const makeEl = document.getElementById('f_make');
+    const modelEl = document.getElementById('f_model');
+    if (!makeEl || !modelEl) return;
+
+    makeEl.addEventListener('change', () => {
+      modelEl.innerHTML = modelOptionsHtml(makeEl.value, '');
+    });
+  }
+
+  // Renders a checklist field. If f.groups is present, checkboxes are
+  // organized under subheadings (used for viscosities); otherwise falls
+  // back to a flat list of f.options for any future ungrouped checklist.
+  function renderChecklistField(f, fieldId, currentVals) {
+    const groups = f.groups || [{ label: null, options: f.options || [] }];
+
+    const groupsHtml = groups.map((g, gi) => {
+      const boxes = g.options.map((opt, i) => {
+        const boxId = `${fieldId}_g${gi}_${i}`;
+        const checked = currentVals.includes(opt) ? 'checked' : '';
+        return `
+          <label class="checklist-option" for="${boxId}">
+            <input type="checkbox" id="${boxId}" data-checklist="${fieldId}" value="${escapeHtml(opt)}" ${checked}>
+            <span>${escapeHtml(opt)}</span>
+          </label>
+        `;
+      }).join('');
+
+      return `
+        <div class="checklist-subgroup">
+          ${g.label ? `<div class="checklist-subgroup-label">${escapeHtml(g.label)}</div>` : ''}
+          <div class="checklist-subgroup-boxes">${boxes}</div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="field">
+        <label>${escapeHtml(f.label)}${f.required ? ' *' : ''}</label>
+        <div class="checklist-group" id="${fieldId}">${groupsHtml}</div>
+        ${f.hint ? `<div class="field-hint">${escapeHtml(f.hint)}</div>` : ''}
+      </div>
+    `;
+  }
+
   function renderFormFields(item) {
     const config = SECTIONS[currentSection];
     formFields.innerHTML = config.fields.map(f => {
       const rawVal = item ? item[f.key] : undefined;
       const fieldId = 'f_' + f.key;
+
+      if (f.type === 'vehicle-make') {
+        const currentVal = item ? item[f.key] : '';
+        return `<div class="field"><label for="${fieldId}">${escapeHtml(f.label)}${f.required ? ' *' : ''}</label><select id="${fieldId}">${makeOptionsHtml(currentVal)}</select></div>`;
+      }
+
+      if (f.type === 'vehicle-model') {
+        const currentMake = item ? item.make : '';
+        const currentVal = item ? item[f.key] : '';
+        return `<div class="field"><label for="${fieldId}">${escapeHtml(f.label)}${f.required ? ' *' : ''}</label><select id="${fieldId}">${modelOptionsHtml(currentMake, currentVal)}</select></div>`;
+      }
+
+      if (f.type === 'checklist') {
+        const currentVals = (item && Array.isArray(rawVal)) ? rawVal : [];
+        return renderChecklistField(f, fieldId, currentVals);
+      }
 
       if (f.type === 'select') {
         const currentVal = item
@@ -250,6 +396,8 @@
         </div>
       `;
     }).join('');
+
+    bindMakeModelCascade();
   }
 
   function openModal(item) {
@@ -267,7 +415,15 @@
     const config = SECTIONS[currentSection];
     const payload = {};
     for (const f of config.fields) {
-      const el = document.getElementById('f_' + f.key);
+      const fieldId = 'f_' + f.key;
+
+      if (f.type === 'checklist') {
+        const checked = document.querySelectorAll(`input[data-checklist="${fieldId}"]:checked`);
+        payload[f.key] = Array.from(checked).map(el => el.value);
+        continue;
+      }
+
+      const el = document.getElementById(fieldId);
       let value = el.value;
 
       if (f.type === 'number') {

@@ -9,7 +9,13 @@
  *  - Auto-calc quantities from VEHICLE_SPECS (falling back to
  *    GENERIC_FALLBACK_SPECS with an "estimated" note when the vehicle has
  *    no specific data yet).
- *  - Resolve prices/part numbers/suppliers from PARTS_CATALOG.
+ *  - Resolve prices/part numbers/suppliers from PARTS_CATALOG, using the
+ *    selected vehicle's make/model/year so filter part-number overrides
+ *    (see FILTER_PART_NUMBERS in partsCatalog.js) apply correctly, and
+ *    the filter's type (oil/engine/cabin) so the right override is used.
+ *  - Filter available oil brands by requested tier, whether the customer
+ *    flagged the vehicle as high-mileage (75k+ miles), AND the vehicle's
+ *    recommended viscosity — so only compatible oils are ever offered.
  *  - Build the customer-facing estimate card (#selectedPartsList /
  *    #partsEstimateTotal).
  *  - Build a silent admin payload (vehicle specs, parts list, labor
@@ -62,8 +68,26 @@ function resolveVehicleSpecs() {
 }
 
 /**
+ * Shape the currently selected vehicle the way getPartRecord() expects
+ * it (make/model/year), so filter part-number overrides can be resolved.
+ * Centralized here so every call site stays in sync if the state shape
+ * ever changes.
+ */
+function currentVehicle() {
+    return {
+        make: state.selectedMake,
+        model: state.selectedModel,
+        year: state.selectedYear
+    };
+}
+
+/**
  * Per-service state shape stored in state.selectedParts[serviceDisplayName]:
- * Oil Change:  { oilBrand, filterBrand }
+ * Oil Change:  { oilBrand, filterBrand, engineFilterBrand, cabinFilterBrand, highMileage }
+ *              engineFilterBrand/cabinFilterBrand are optional add-ons —
+ *              "" / unset means the customer didn't add that filter.
+ *              highMileage is "yes"/"no"/unset — "yes" restricts the Oil
+ *              Brand list to high-mileage-formulated oils.
  * Brake Service: { axle, padType, rotors }
  * Tires: { serviceType }
  */
@@ -129,15 +153,29 @@ function buildConfiguratorHTML() {
                 return;
             }
 
-            const availableBrands = (typeof getAvailableOilBrands === 'function')
-                ? getAvailableOilBrands(requestedTier, vehicleRequiredTier)
-                : [];
-
             const estimateNote = specs.isEstimate
                 ? `<div class="config-estimate-flag">Estimated — not vehicle-specific yet</div>`
                 : '';
             const tierNote = (vehicleRequiredTier === 'premium' && requestedTier !== 'budget')
                 ? `<div class="config-estimate-flag">This vehicle requires full synthetic / synthetic blend oil — budget options aren't shown.</div>`
+                : '';
+
+            // Asked first because it now gates which oils are offered
+            // below, rather than being a purely informational note.
+            const requestedHighMileage = current.highMileage === 'yes';
+
+            // recommendedViscosity is threaded in here — getAvailableOilBrands
+            // now hard-filters out any product that lists specific
+            // viscosities and doesn't include this one (see partsCatalog.js).
+            const availableBrands = (typeof getAvailableOilBrands === 'function')
+                ? getAvailableOilBrands(requestedTier, vehicleRequiredTier, requestedHighMileage, recommendedViscosity)
+                : [];
+
+            const highMileageEmptyNote = (requestedHighMileage && availableBrands.length === 0)
+                ? `<div class="config-estimate-flag">No high-mileage oil formulas are in the catalog for this tier/viscosity yet. Add one in the parts admin, or select "No" above.</div>`
+                : '';
+            const viscosityEmptyNote = (!requestedHighMileage && availableBrands.length === 0)
+                ? `<div class="config-estimate-flag">No oils in the catalog are listed for ${recommendedViscosity} yet. Add one in the parts admin, or check its Available Viscosities.</div>`
                 : '';
 
             const selectedOilPart = current.oilBrand
@@ -156,6 +194,19 @@ function buildConfiguratorHTML() {
                     ${tierNote}
 
                     <div class="field">
+                        <label>Above 75,000 Miles?</label>
+                        <select onchange="updatePartSelection('${serviceName}','highMileage', this.value)">
+                            <option value="">Select one</option>
+                            <option value="yes" ${current.highMileage === 'yes' ? 'selected' : ''}>Yes</option>
+                            <option value="no" ${current.highMileage === 'no' ? 'selected' : ''}>No</option>
+                        </select>
+                        <div class="field-hint">Yes narrows the Oil Brand list below to high-mileage formulas.</div>
+                    </div>
+
+                    ${highMileageEmptyNote}
+                    ${viscosityEmptyNote}
+
+                    <div class="field">
                         <label>Oil Brand</label>
                         <select onchange="updatePartSelection('${serviceName}','oilBrand', this.value)">
                             <option value="">Select Oil Brand</option>
@@ -168,7 +219,7 @@ function buildConfiguratorHTML() {
                     ${promoNote}
 
                     <div class="field">
-                        <label>Filter Brand</label>
+                        <label>Oil Filter Brand</label>
                         <select onchange="updatePartSelection('${serviceName}','filterBrand', this.value)">
                             <option value="">Select Filter Brand</option>
                             ${def.options.filterBrand.map(o =>
@@ -178,13 +229,23 @@ function buildConfiguratorHTML() {
                     </div>
 
                     <div class="field">
-                        <label>Above 75,000 Miles?</label>
-                        <select onchange="updatePartSelection('${serviceName}','highMileage', this.value)">
-                            <option value="">Select one</option>
-                            <option value="yes" ${current.highMileage === 'yes' ? 'selected' : ''}>Yes</option>
-                            <option value="no" ${current.highMileage === 'no' ? 'selected' : ''}>No</option>
+                        <label>Engine Air Filter <span class="field-optional">(optional)</span></label>
+                        <select onchange="updatePartSelection('${serviceName}','engineFilterBrand', this.value)">
+                            <option value="">Not needed this visit</option>
+                            ${def.options.filterBrand.map(o =>
+                `<option value="${o}" ${current.engineFilterBrand === o ? 'selected' : ''}>${o}</option>`
+            ).join('')}
                         </select>
-                        <div class="field-hint">For the technician's reference only — doesn't change pricing or product selection.</div>
+                    </div>
+
+                    <div class="field">
+                        <label>Cabin Air Filter <span class="field-optional">(optional)</span></label>
+                        <select onchange="updatePartSelection('${serviceName}','cabinFilterBrand', this.value)">
+                            <option value="">Not needed this visit</option>
+                            ${def.options.filterBrand.map(o =>
+                `<option value="${o}" ${current.cabinFilterBrand === o ? 'selected' : ''}>${o}</option>`
+            ).join('')}
+                        </select>
                     </div>
 
                     <div class="field-hint">${qty} qts needed • recommended ${recommendedViscosity}</div>
@@ -303,12 +364,15 @@ function buildLineItem(label, partRecord, qty, unitLabel) {
  */
 function computeEstimate() {
     const specs = resolveVehicleSpecs();
+    const vehicle = currentVehicle();
     const lineItems = [];
     const laborItems = [];
     const toolsNeeded = new Set();
     // Informational flags that don't affect pricing or product selection
     // but should still reach the admin payload / tech sheet (e.g. "Above
-    // 75,000 Miles?"). Keyed by display service name.
+    // 75,000 Miles?" — the answer itself now also gates oil brand
+    // availability in buildConfiguratorHTML, but is still logged here too
+    // so the tech sheet shows it plainly).
     const serviceNotes = {};
     let hasPlaceholderPricing = false;
 
@@ -335,7 +399,11 @@ function computeEstimate() {
                 const remainderQts = totalQty % jugSize;
 
                 const oilPart = getPartRecord('oilChange', 'oilProducts', sel.oilBrand);
-                const filterPart = getPartRecord('oilChange', 'filterBrand', sel.filterBrand);
+                // Oil filter: pass the vehicle + explicit "oil" filterType so
+                // any vehicle-specific override (FILTER_PART_NUMBERS) for
+                // this brand/vehicle/filterType resolves to the correct
+                // part number and price instead of the generic brand price.
+                const filterPart = getPartRecord('oilChange', 'filterBrand', sel.filterBrand, vehicle, 'oil');
 
                 // Buy oil the way it's actually purchased: full 5qt unit(s)
                 // priced at the bulk jugPrice, plus loose quarts at the
@@ -344,7 +412,7 @@ function computeEstimate() {
                     const jugUnitPrice = (oilPart.jugPrice != null) ? oilPart.jugPrice : (oilPart.price || 0) * jugSize;
                     lineItems.push({
                         label: `${sel.oilBrand} Motor Oil (${jugSize}qt)`,
-                        partNumber: oilPart.partNumber,
+                        partNumber: oilPart.jugPartNumber || oilPart.partNumber,
                         supplier: oilPart.supplier ? getSupplierInfo(oilPart.supplier) : null,
                         unitPrice: jugUnitPrice,
                         qty: fullJugs,
@@ -378,6 +446,24 @@ function computeEstimate() {
                     });
                 } else {
                     lineItems.push(buildLineItem(`${sel.filterBrand} Oil Filter`, filterPart, 1, 'each'));
+                }
+
+                // Optional engine air filter add-on. Uses the same brand
+                // list/prices as the oil filter, but resolves its part
+                // number/price override with filterType "engine" so a
+                // brand that has different part numbers per filter type
+                // on the same vehicle still gets the right one.
+                if (sel.engineFilterBrand) {
+                    const engineFilterPart = getPartRecord('oilChange', 'filterBrand', sel.engineFilterBrand, vehicle, 'engine');
+                    lineItems.push(buildLineItem(`${sel.engineFilterBrand} Engine Air Filter`, engineFilterPart, 1, 'each'));
+                    if (engineFilterPart.isPlaceholder) hasPlaceholderPricing = true;
+                }
+
+                // Optional cabin air filter add-on — same pattern, filterType "cabin".
+                if (sel.cabinFilterBrand) {
+                    const cabinFilterPart = getPartRecord('oilChange', 'filterBrand', sel.cabinFilterBrand, vehicle, 'cabin');
+                    lineItems.push(buildLineItem(`${sel.cabinFilterBrand} Cabin Air Filter`, cabinFilterPart, 1, 'each'));
+                    if (cabinFilterPart.isPlaceholder) hasPlaceholderPricing = true;
                 }
 
                 const laborMinutes = specs?.oilChangeLaborMinutes || GENERIC_FALLBACK_SPECS.oilChangeLaborMinutes || 20;

@@ -8,13 +8,15 @@
  * vehicle-data.js — same idea, different data shape.
  *
  * CRITICAL: configurator.js and booking.ejs are UNCHANGED by this
- * migration. They still expect window.PARTS_CATALOG, window.OIL_PRODUCTS,
- * window.FILTER_COMPATIBILITY, window.FILTER_PART_NUMBERS, window.SUPPLIERS,
- * and the getPartRecord/getAvailableOilBrands/getAvailableFilterBrands/
- * getSupplierInfo functions, all exactly as before. This generator's only
- * job is to produce text that assigns those same globals — the helper
- * function bodies below are copied verbatim from the original static
- * file and do not change based on catalog content.
+ * migration beyond what's documented here. They still expect
+ * window.PARTS_CATALOG, window.OIL_PRODUCTS, window.FILTER_COMPATIBILITY,
+ * window.FILTER_PART_NUMBERS, window.SUPPLIERS, and the
+ * getPartRecord/getAvailableOilBrands/getAvailableFilterBrands/
+ * getSupplierInfo functions. getPartRecord gained an optional 5th
+ * `filterType` argument (defaults to 'oil'). getAvailableOilBrands gained
+ * optional 3rd (`highMileageRequested`, defaults false) and 4th
+ * (`recommendedViscosity`, defaults null) arguments — existing call sites
+ * that don't pass them keep behaving exactly as before.
  *
  * "unit" labels ("per quart", "per axle set", "per axle pair") and the
  * hardcoded pass-through options under tires.serviceType with price 0
@@ -36,7 +38,8 @@ function jsLiteral(value) {
 
 function renderOilProduct(p) {
     return `makePart({
-        partNumber: ${jsLiteral(p.partNumber)},
+        partNumber: ${jsLiteral(p.quartPartNumber)},
+        jugPartNumber: ${jsLiteral(p.jugPartNumber)},
         price: ${jsLiteral(p.price)},
         jugPrice: ${jsLiteral(p.jugPrice)},
         supplier: ${jsLiteral(p.supplier)},
@@ -44,7 +47,9 @@ function renderOilProduct(p) {
         oilCategory: ${jsLiteral(p.oilCategory)},
         tier: ${jsLiteral(p.tier)},
         availability: ${jsLiteral(p.availability || 'all')},
-        includesFreeFilter: ${jsLiteral(!!p.includesFreeFilter)}
+        includesFreeFilter: ${jsLiteral(!!p.includesFreeFilter)},
+        highMileage: ${jsLiteral(!!p.highMileage)},
+        viscosities: ${jsLiteral(p.viscosities || [])}
     })`
 }
 
@@ -91,15 +96,19 @@ function renderFilterCompatibility(filterBrands) {
 }
 
 function renderFilterPartNumbers(filterOverrides) {
-    // Reconstruct the nested brand -> make -> model -> (year | _default)
-    // structure from the flat list of override documents.
+    // Reconstruct the nested brand -> filterType -> make -> model ->
+    // (year | _default) structure from the flat list of override
+    // documents. filterType defaults to 'oil' for any legacy override
+    // rows that predate the field.
     const tree = {}
     for (const o of filterOverrides) {
+        const filterType = o.filterType || 'oil'
         tree[o.brand] = tree[o.brand] || {}
-        tree[o.brand][o.make] = tree[o.brand][o.make] || {}
-        tree[o.brand][o.make][o.model] = tree[o.brand][o.make][o.model] || {}
+        tree[o.brand][filterType] = tree[o.brand][filterType] || {}
+        tree[o.brand][filterType][o.make] = tree[o.brand][filterType][o.make] || {}
+        tree[o.brand][filterType][o.make][o.model] = tree[o.brand][filterType][o.make][o.model] || {}
         const key = o.year != null ? String(o.year) : '_default'
-        tree[o.brand][o.make][o.model][key] = {
+        tree[o.brand][filterType][o.make][o.model][key] = {
             partNumber: o.partNumber,
             price: o.price,
             url: o.url
@@ -108,33 +117,38 @@ function renderFilterPartNumbers(filterOverrides) {
 
     if (Object.keys(tree).length === 0) return '{}'
 
-    const brandEntries = Object.entries(tree).map(([brand, makes]) => {
-        const makeEntries = Object.entries(makes).map(([make, models]) => {
-            const modelEntries = Object.entries(models).map(([model, years]) => {
-                const yearEntries = Object.entries(years).map(([yearKey, override]) => {
-                    const cleaned = {}
-                    if (override.partNumber != null) cleaned.partNumber = override.partNumber
-                    if (override.price != null) cleaned.price = override.price
-                    if (override.url != null) cleaned.url = override.url
-                    return `                ${yearKey === '_default' ? '_default' : jsLiteral(yearKey)}: ${jsLiteral(cleaned)}`
+    const brandEntries = Object.entries(tree).map(([brand, types]) => {
+        const typeEntries = Object.entries(types).map(([filterType, makes]) => {
+            const makeEntries = Object.entries(makes).map(([make, models]) => {
+                const modelEntries = Object.entries(models).map(([model, years]) => {
+                    const yearEntries = Object.entries(years).map(([yearKey, override]) => {
+                        const cleaned = {}
+                        if (override.partNumber != null) cleaned.partNumber = override.partNumber
+                        if (override.price != null) cleaned.price = override.price
+                        if (override.url != null) cleaned.url = override.url
+                        return `                    ${yearKey === '_default' ? '_default' : jsLiteral(yearKey)}: ${jsLiteral(cleaned)}`
+                    })
+                    return `                ${jsLiteral(model)}: {\n${yearEntries.join(',\n')}\n                }`
                 })
-                return `            ${jsLiteral(model)}: {\n${yearEntries.join(',\n')}\n            }`
+                return `            ${jsLiteral(make)}: {\n${modelEntries.join(',\n')}\n            }`
             })
-            return `        ${jsLiteral(make)}: {\n${modelEntries.join(',\n')}\n        }`
+            return `        ${jsLiteral(filterType)}: {\n${makeEntries.join(',\n')}\n        }`
         })
-        return `    ${jsLiteral(brand)}: {\n${makeEntries.join(',\n')}\n    }`
+        return `    ${jsLiteral(brand)}: {\n${typeEntries.join(',\n')}\n    }`
     })
 
     return `{\n${brandEntries.join(',\n')}\n}`
 }
 
 // The helper functions below are copied verbatim from the original
-// public/js/partsCatalog.js. They contain no catalog data themselves —
-// they only read the data variables generated above — so they never
-// need to change when the admin edits the catalog.
+// public/js/partsCatalog.js, plus jugPartNumber/highMileage/viscosities
+// and the filterType parameter on getPartRecord. They contain no catalog
+// data themselves — they only read the data variables generated above —
+// so they never need to change when the admin edits the catalog.
 const HELPER_FUNCTIONS_SOURCE = `
 function makePart({
     partNumber = null,
+    jugPartNumber = null,
     price = null,
     jugPrice = null,
     supplier = null,
@@ -142,10 +156,13 @@ function makePart({
     oilCategory = null,
     tier = null,
     availability = "all",
-    includesFreeFilter = false
+    includesFreeFilter = false,
+    highMileage = false,
+    viscosities = []
 } = {}) {
     return {
         partNumber,
+        jugPartNumber,
         price,
         jugPrice,
         supplier,
@@ -154,18 +171,28 @@ function makePart({
         tier,
         availability,
         includesFreeFilter,
+        highMileage,
+        viscosities,
         isPlaceholder: partNumber === null && price === null
     };
 }
 
 const OIL_JUG_SIZE_QTS = 5;
 
-function getAvailableOilBrands(requestedTier, vehicleRequiredTier) {
+// highMileageRequested defaults to false, recommendedViscosity defaults
+// to null — every existing call site keeps behaving exactly as before.
+// viscosities filtering follows the same "empty list = universal"
+// convention as FILTER_COMPATIBILITY: a product with no viscosities
+// listed is never excluded by this check, only products that DO list
+// viscosities get filtered against the vehicle's recommended one.
+function getAvailableOilBrands(requestedTier, vehicleRequiredTier, highMileageRequested, recommendedViscosity) {
     return Object.entries(OIL_PRODUCTS)
         .filter(([, product]) => {
             if (product.availability !== "all") return false;
             if (vehicleRequiredTier === "premium" && product.tier === "budget") return false;
             if (requestedTier && product.tier !== requestedTier) return false;
+            if (highMileageRequested && !product.highMileage) return false;
+            if (recommendedViscosity && product.viscosities && product.viscosities.length > 0 && !product.viscosities.includes(recommendedViscosity)) return false;
             return true;
         })
         .map(([name]) => name);
@@ -182,12 +209,15 @@ function getAvailableFilterBrands(make) {
     });
 }
 
-function getPartRecord(serviceKey, optionGroup, optionValue, vehicle = null) {
+// filterType defaults to "oil" so every existing call site (oil-change
+// filter selection) keeps working unchanged. Pass "engine" or "cabin"
+// explicitly for those add-on pickers.
+function getPartRecord(serviceKey, optionGroup, optionValue, vehicle = null, filterType = "oil") {
     const record = PARTS_CATALOG?.[serviceKey]?.[optionGroup]?.[optionValue];
     const base = record || makePart();
 
     if (serviceKey === 'oilChange' && optionGroup === 'filterBrand' && vehicle?.make && vehicle?.model) {
-        const override = FILTER_PART_NUMBERS?.[optionValue]?.[vehicle.make]?.[vehicle.model];
+        const override = FILTER_PART_NUMBERS?.[optionValue]?.[filterType]?.[vehicle.make]?.[vehicle.model];
         if (override) {
             const yearOverride = vehicle.year ? override[String(vehicle.year)] : null;
             const chosen = yearOverride || override._default;
