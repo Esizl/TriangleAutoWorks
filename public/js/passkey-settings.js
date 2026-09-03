@@ -11,6 +11,14 @@
         return;
     }
 
+    const keyIconSvg = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="7.5" cy="15.5" r="5.5"/>
+            <path d="m21 2-9.6 9.6"/>
+            <path d="m15.5 7.5 3 3L22 7l-3-3"/>
+        </svg>
+    `;
+
     async function loadPasskeys() {
         const res = await fetch('/auth/webauthn/list');
         if (!res.ok) {
@@ -20,14 +28,20 @@
         const passkeys = await res.json();
 
         if (passkeys.length === 0) {
-            listEl.innerHTML = '<p>No passkeys added yet.</p>';
+            listEl.innerHTML = '<div class="passkey-empty-state">No passkeys added yet.</div>';
             return;
         }
 
         listEl.innerHTML = passkeys.map(pk => `
-            <div class="passkey-row" data-credential-id="${pk.credentialID}">
-                <span>${pk.nickname || 'Unnamed passkey'} — added ${new Date(pk.createdAt).toLocaleDateString()}</span>
-                <button type="button" class="btn-ghost passkey-remove-btn" data-credential-id="${pk.credentialID}">Remove</button>
+            <div class="passkey-item" data-credential-id="${pk.credentialID}">
+                <div class="passkey-item-info">
+                    <div class="passkey-item-icon">${keyIconSvg}</div>
+                    <div class="passkey-item-text">
+                        <div class="passkey-item-name">${pk.nickname || 'Unnamed passkey'}</div>
+                        <div class="passkey-item-meta">Added ${new Date(pk.createdAt).toLocaleDateString()}</div>
+                    </div>
+                </div>
+                <button type="button" class="passkey-item-remove" data-credential-id="${pk.credentialID}">Remove</button>
             </div>
         `).join('');
     }
@@ -72,7 +86,7 @@
     });
 
     listEl.addEventListener('click', async function (e) {
-        const btn = e.target.closest('.passkey-remove-btn');
+        const btn = e.target.closest('.passkey-item-remove');
         if (!btn) return;
 
         if (!window.confirm('Remove this passkey? You will no longer be able to log in with it.')) return;

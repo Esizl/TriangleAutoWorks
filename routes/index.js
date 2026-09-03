@@ -1,6 +1,6 @@
 const router = require('express').Router()
 const { ensureAuthenticated } = require('../config/ensureAuth')
-const { version } = require('../config/config.json')
+const version = require('../config/config.json').server.version
 const User = require('../models/User')
 
 // --- Home route ---

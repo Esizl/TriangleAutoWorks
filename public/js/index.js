@@ -1,119 +1,71 @@
-/* ─────────────────────────────────────
-   Flik — index.js
-   ───────────────────────────────────── */
+function switchTab(id, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    btn.classList.add('active');
+}
 
-document.addEventListener('DOMContentLoaded', () => {
-
-    /* ── Nav scroll state ───────────────── */
-    const nav = document.querySelector('.nav');
-
-    const onScroll = () => {
-        nav.classList.toggle('scrolled', window.scrollY > 10);
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-
-
-    /* ── Search toggle ──────────────────── */
-    const searchBtn = document.getElementById('searchBtn');
-    const searchBar = document.getElementById('searchBar');
-    const searchInput = document.getElementById('searchInput');
-    const searchClose = document.getElementById('searchClose');
-
-    const openSearch = () => {
-        searchBar.classList.add('open');
-        setTimeout(() => searchInput.focus(), 50);
-    };
-
-    const closeSearch = () => {
-        searchBar.classList.remove('open');
-        searchInput.value = '';
-    };
-
-    searchBtn?.addEventListener('click', openSearch);
-    searchClose?.addEventListener('click', closeSearch);
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeSearch();
-        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-            e.preventDefault();
-            searchBar.classList.contains('open') ? closeSearch() : openSearch();
+// Scroll-fade for sections
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+        if (e.isIntersecting) {
+            e.target.style.opacity = '1';
+            e.target.style.transform = 'translateY(0)';
         }
     });
-
-
-    /* ── Genre pill filter ──────────────── */
-    const pillRow = document.getElementById('pillRow');
-
-    pillRow?.addEventListener('click', (e) => {
-        const pill = e.target.closest('.pill');
-        if (!pill) return;
-
-        pillRow.querySelectorAll('.pill').forEach(p => p.classList.remove('pill--active'));
-        pill.classList.add('pill--active');
-
-        // Hook: fire a custom event others can listen to
-        pillRow.dispatchEvent(new CustomEvent('genreChange', {
-            bubbles: true,
-            detail: { genre: pill.dataset.genre }
-        }));
-    });
-
-
-    /* ── Media card hover depth ─────────── */
-    // Adds a subtle 3-D tilt on hover for the hero cards
-    document.querySelectorAll('.hero-card').forEach(card => {
-        card.addEventListener('mousemove', (e) => {
-            const rect = card.getBoundingClientRect();
-            const cx = rect.left + rect.width / 2;
-            const cy = rect.top + rect.height / 2;
-            const dx = (e.clientX - cx) / (rect.width / 2);
-            const dy = (e.clientY - cy) / (rect.height / 2);
-            card.style.transform = `scale(1.025) translateY(-4px) rotateY(${dx * 4}deg) rotateX(${-dy * 4}deg)`;
-        });
-
-        card.addEventListener('mouseleave', () => {
-            card.style.transform = '';
-        });
-    });
-
-
-    /* ── Intersection observer — fade-in on scroll ── */
-    const fadeEls = document.querySelectorAll('.media-card, .stat-item, .cta-section');
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-                observer.unobserve(entry.target);
-            }
-        });
-    }, { threshold: 0.12 });
-
-    fadeEls.forEach((el, i) => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(20px)';
-        el.style.transition = `opacity 0.5s ${i * 0.05}s ease, transform 0.5s ${i * 0.05}s ease`;
-        observer.observe(el);
-    });
-
-
-    /* ── "See all" buttons ──────────────── */
-    document.querySelectorAll('.see-all').forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Placeholder — wire to your router/page logic
-            console.log('See all clicked');
-        });
-    });
-
-
-    /* ── "Get started" / CTA buttons ────── */
-    document.querySelectorAll('.btn-primary').forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Placeholder — wire to auth/signup flow
-            console.log('CTA clicked');
-        });
-    });
-
+}, { threshold: 0.1 });
+document.querySelectorAll('.price-card, .bundle-card, .service-col, .callout-detail').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(16px)';
+    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    observer.observe(el);
 });
+
+function toggleAccountMenu(e) {
+    e.stopPropagation();
+    document.getElementById('navAccount').classList.toggle('open');
+}
+document.addEventListener('click', function (e) {
+    const acct = document.getElementById('navAccount');
+    if (acct && !acct.contains(e.target)) {
+        acct.classList.remove('open');
+    }
+});
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+        const acct = document.getElementById('navAccount');
+        if (acct) acct.classList.remove('open');
+    }
+});
+
+const navToggle = document.querySelector('[data-nav-toggle]');
+const navLinks = document.querySelector('.nav-links');
+if (navToggle && navLinks) {
+    navToggle.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const isOpen = navLinks.classList.toggle('open');
+        navToggle.classList.toggle('active', isOpen);
+        navToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+    navLinks.querySelectorAll('a').forEach(function (link) {
+        link.addEventListener('click', function () {
+            navLinks.classList.remove('open');
+            navToggle.classList.remove('active');
+            navToggle.setAttribute('aria-expanded', 'false');
+        });
+    });
+    document.addEventListener('click', function (e) {
+        if (!navLinks.contains(e.target) && !navToggle.contains(e.target)) {
+            navLinks.classList.remove('open');
+            navToggle.classList.remove('active');
+            navToggle.setAttribute('aria-expanded', 'false');
+        }
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            navLinks.classList.remove('open');
+            navToggle.classList.remove('active');
+            navToggle.setAttribute('aria-expanded', 'false');
+        }
+    });
+}

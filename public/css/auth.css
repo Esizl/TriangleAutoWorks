@@ -47,7 +47,7 @@
 /* ── SUCCESS BANNER (server-rendered) ── */
 .auth-success-banner {
     background: rgba(46, 204, 113, 0.1);
-    border: 1px solid rgba(46, 204, 113, 0.35); 
+    border: 1px solid rgba(46, 204, 113, 0.35);
     color: #2ecc71;
     font-size: 13px;
     font-weight: 500;
@@ -198,6 +198,8 @@
     width: 100%;
     justify-content: center;
     text-align: center;
+    margin-top: 14px;
+    /* explicit, doesn't depend on booking.css */
 }
 
 /* ── DIVIDER ── */

@@ -180,29 +180,79 @@
             border-color: rgba(200, 16, 46, 0.4);
             background: var(--card);
         }
-        .admin-tool-icon {
-            width: 30px;
-            height: 30px;
-            stroke: var(--red);
-        }
+        .admin-tool-icon { width: 30px; height: 30px; stroke: var(--red); }
         .admin-tool-icon svg { width: 100%; height: 100%; }
-        .admin-tool-name {
-            font-size: 13.5px;
+        .admin-tool-name { font-size: 13.5px; font-weight: 600; }
+        .admin-tool-desc { font-size: 11.5px; color: var(--silver-dim); }
+        .admin-tool-placeholder { opacity: 0.45; cursor: not-allowed; }
+
+        /* ── PASSKEY LIST ITEMS ── */
+        .passkey-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            background: var(--card2);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+        }
+        .passkey-item-info { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .passkey-item-icon {
+            width: 34px;
+            height: 34px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(200, 16, 46, 0.1);
+            border: 1px solid rgba(200, 16, 46, 0.25);
+            border-radius: 2px;
+        }
+        .passkey-item-icon svg { width: 16px; height: 16px; stroke: var(--red); display: block; }
+        .passkey-item-text { min-width: 0; }
+        .passkey-item-name {
+            font-size: 14px;
             font-weight: 600;
+            color: var(--white);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .admin-tool-desc {
-            font-size: 11.5px;
+        .passkey-item-meta { font-size: 12px; color: var(--silver-dim); margin-top: 2px; }
+        .passkey-item-remove {
+            flex-shrink: 0;
+            background: none;
+            border: 1px solid var(--border);
             color: var(--silver-dim);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 8px 14px;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: color 0.2s, border-color 0.2s, background 0.2s;
         }
-        .admin-tool-placeholder {
-            opacity: 0.45;
-            cursor: not-allowed;
+        .passkey-item-remove:hover {
+            color: #E8394D;
+            border-color: rgba(232, 57, 77, 0.4);
+            background: rgba(232, 57, 77, 0.08);
+        }
+        .passkey-empty-state {
+            font-size: 13px;
+            color: var(--silver-dim);
+            padding: 16px;
+            text-align: center;
+            border: 1px dashed var(--border);
+            border-radius: 2px;
+            margin-bottom: 16px;
         }
 
         @media (max-width: 560px) {
             .admin-tools-grid { grid-template-columns: 1fr; }
         }
-
         @media (max-width: 640px) {
             nav { padding: 0 20px; }
             .shell { padding: 110px 20px 60px; }
@@ -232,23 +282,23 @@
         <h1 class="page-title">Settings</h1>
         <div class="red-rule"></div>
 
-            <% if (typeof successMessage !== 'undefined' && successMessage && successMessage.length) { %>
+        <% if (typeof successMessage !== 'undefined' && successMessage && successMessage.length) { %>
             <% successMessage.forEach(function(msg) { %>
                 <div class="flash flash-success"><%= msg %></div>
             <% }) %>
-            <% } %>
-            <% if (typeof errorMessage !== 'undefined' && errorMessage && errorMessage.length) { %>
-                <% errorMessage.forEach(function(msg) { %>
-                    <div class="flash flash-error"><%= msg %></div>
-                <% }) %>
-            <% } %>
-            <% if (typeof errors !== 'undefined' && errors && errors.length) { %>
-                <% errors.forEach(function(err) { %>
-                    <div class="flash flash-error"><%= err.message %></div>
-                <% }) %>
-            <% } %>
+        <% } %>
+        <% if (typeof errorMessage !== 'undefined' && errorMessage && errorMessage.length) { %>
+            <% errorMessage.forEach(function(msg) { %>
+                <div class="flash flash-error"><%= msg %></div>
+            <% }) %>
+        <% } %>
+        <% if (typeof errors !== 'undefined' && errors && errors.length) { %>
+            <% errors.forEach(function(err) { %>
+                <div class="flash flash-error"><%= err.message %></div>
+            <% }) %>
+        <% } %>
 
-            <div class="panel">
+        <div class="panel">
             <div class="panel-title">Profile</div>
             <div class="panel-sub">
                 <span class="role-pill">
@@ -297,9 +347,9 @@
             </form>
         </div>
 
-        <div class="settings-card">
-            <h3>Passkeys</h3>
-            <p>Sign in without a password using Face ID, Touch ID, or a security key.</p>
+        <div class="panel">
+            <div class="panel-title">Passkeys</div>
+            <div class="panel-sub">Sign in without a password using Face ID, Touch ID, or a security key.</div>
             <div id="passkeyList"></div>
             <button type="button" id="addPasskeyBtn" class="btn-primary">Add a Passkey</button>
         </div>
@@ -321,7 +371,7 @@
                     </a>
                     <a href="/admin/users" class="admin-tool-tile">
                         <div class="admin-tool-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users-round-icon lucide-users-round"><path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3"/></svg>
                         </div>
                         <div class="admin-tool-name">Users</div>
                         <div class="admin-tool-desc">Manage staff and customer accounts</div>

@@ -249,6 +249,94 @@ nav {
     border-radius: 2px;
 }
 
+/* ── PASSKEY LIST ITEMS ── */
+.passkey-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+}
+
+.passkey-item-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.passkey-item-icon {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(200, 16, 46, 0.1);
+    border: 1px solid rgba(200, 16, 46, 0.25);
+    border-radius: 2px;
+}
+
+.passkey-item-icon svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--red);
+}
+
+.passkey-item-text {
+    min-width: 0;
+}
+
+.passkey-item-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.passkey-item-meta {
+    font-size: 12px;
+    color: var(--silver-dim);
+    margin-top: 2px;
+}
+
+.passkey-item-remove {
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--silver-dim);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.passkey-item-remove:hover {
+    color: #E8394D;
+    border-color: rgba(232, 57, 77, 0.4);
+    background: rgba(232, 57, 77, 0.08);
+}
+
+.passkey-empty-state {
+    font-size: 13px;
+    color: var(--silver-dim);
+    padding: 16px;
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: 2px;
+    margin-bottom: 16px;
+}
+
 @media (max-width: 640px) {
     nav {
         padding: 0 20px;
