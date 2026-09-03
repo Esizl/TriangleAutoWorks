@@ -5,8 +5,8 @@
     "version": "0.1.1"
   },
   "webauthn": {
-    "rpID": "localhost",
+    "rpID": "TAW",
     "rpName": "Triangle Auto Works",
-    "origin": "http://localhost:8080"
+    "origin": "https://triangleautowork.com"
   }
 }
