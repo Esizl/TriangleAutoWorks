@@ -7,28 +7,39 @@
     <title>Admin — Triangle Auto Works</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <!--
+        This page now reuses the same dark theme variables as booking.css /
+        auth.css (--black, --card, --card2, --red, --silver, --border, etc.)
+        instead of the old light glassmorphic palette, so it matches
+        Settings/Login/Booking. If this page is ever loaded alongside
+        booking.css directly, these :root values can be deleted in favor
+        of the shared stylesheet — they're duplicated here only so this
+        file still matches even if it's the only stylesheet loaded.
+    -->
     <style>
         :root {
-            --bg-1: #EEF0F5;
-            --bg-2: #F7E9EC;
-            --bg-3: #ECEEF8;
-            --glass: rgba(255, 255, 255, 0.55);
-            --glass-strong: rgba(255, 255, 255, 0.72);
-            --glass-border: rgba(255, 255, 255, 0.6);
-            --ink: #1C1C1E;
-            --ink-soft: #6E6E76;
-            --ink-faint: #9C9CA4;
+            --black: #0A0A0A;
+            --card: #141414;
+            --card2: #1C1C1C;
             --red: #C8102E;
-            --red-soft: rgba(200, 16, 46, 0.12);
-            --green: #1E8E5A;
-            --green-soft: rgba(30, 142, 90, 0.12);
-            --amber: #B8800A;
-            --amber-soft: rgba(232, 179, 57, 0.18);
-            --blue: #0071E3;
-            --blue-soft: rgba(0, 113, 227, 0.12);
-            --radius: 22px;
-            --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --red-dark: #9E0C24;
+            --silver: #C0C0C0;
+            --silver-dim: #7A7A7A;
+            --white: #F5F5F5;
+            --text: #CCCCCC;
+            --border: rgba(255, 255, 255, 0.07);
+            --red-soft: rgba(200, 16, 46, 0.1);
+            --green: #4ADE80;
+            --green-soft: rgba(74, 222, 128, 0.1);
+            --amber: #E8B339;
+            --amber-soft: rgba(232, 179, 57, 0.1);
+            --blue: #4F9DFF;
+            --blue-soft: rgba(79, 157, 255, 0.1);
+            --radius: 4px;
+            --font-display: 'Bebas Neue', sans-serif;
+            --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         * {
@@ -42,117 +53,149 @@
         }
 
         body {
-            font-family: var(--font);
-            color: var(--ink);
+            font-family: var(--font-body);
+            color: var(--white);
             min-height: 100vh;
-            background:
-                radial-gradient(ellipse 70% 50% at 15% 0%, var(--bg-2) 0%, transparent 60%),
-                radial-gradient(ellipse 60% 50% at 100% 20%, var(--bg-3) 0%, transparent 55%),
-                var(--bg-1);
-            background-attachment: fixed;
+            background: var(--black);
         }
 
         .topbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 22px 40px;
+            gap: 12px;
+            padding: 0 40px;
+            height: 64px;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(200, 16, 46, 0.25);
         }
 
         .topbar-brand {
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 15px;
-            font-weight: 700;
+            gap: 12px;
+            min-width: 0;
         }
 
         .topbar-brand-mark {
             width: 30px;
             height: 30px;
-            border-radius: 9px;
-            background: linear-gradient(135deg, var(--red), #8E0C22);
+            border-radius: var(--radius);
+            background: linear-gradient(135deg, var(--red), var(--red-dark));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
+            font-family: var(--font-body);
             font-size: 13px;
             font-weight: 800;
             box-shadow: 0 4px 14px rgba(200, 16, 46, 0.35);
+            flex-shrink: 0;
+        }
+
+        .topbar-brand-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.1;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .topbar-brand-main {
+            font-family: var(--font-display);
+            font-size: 18px;
+            letter-spacing: 0.04em;
+            color: var(--white);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .topbar-brand-sub {
+            font-family: var(--font-body);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--red);
+            margin-top: 2px;
         }
 
         .topbar-actions {
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-shrink: 0;
         }
 
-        .glass-pill-link {
+        .pill-link {
             display: flex;
             align-items: center;
             gap: 7px;
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
+            background: var(--card);
+            border: 1px solid var(--border);
             border-radius: 100px;
             padding: 9px 16px;
             font-size: 13px;
             font-weight: 600;
-            color: var(--ink-soft);
+            color: var(--silver-dim);
             text-decoration: none;
-            transition: background 0.2s, color 0.2s;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+            transition: border-color 0.2s, color 0.2s;
+            white-space: nowrap;
         }
 
-        .glass-pill-link:hover {
-            background: var(--glass-strong);
-            color: var(--ink);
+        .pill-link:hover {
+            border-color: rgba(200, 16, 46, 0.4);
+            color: var(--white);
         }
 
-        .glass-pill-link svg {
+        .pill-link svg {
             width: 14px;
             height: 14px;
             stroke: currentColor;
+            flex-shrink: 0;
         }
 
         .shell {
             max-width: 1180px;
             margin: 0 auto;
-            padding: 20px 40px 80px;
+            padding: 44px 40px 80px;
         }
 
         .greeting {
-            font-size: 30px;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            margin-bottom: 4px;
+            font-family: var(--font-display);
+            font-size: 40px;
+            letter-spacing: 0.03em;
+            margin-bottom: 6px;
         }
 
         .greeting-sub {
-            font-size: 14.5px;
-            color: var(--ink-soft);
-            margin-bottom: 32px;
+            font-size: 14px;
+            color: var(--silver-dim);
+            margin-bottom: 8px;
         }
 
-        /* ── GLASS CARD BASE ── */
-        .glass-card {
-            background: var(--glass);
-            backdrop-filter: blur(28px) saturate(160%);
-            -webkit-backdrop-filter: blur(28px) saturate(160%);
-            border: 1px solid var(--glass-border);
+        .red-rule {
+            width: 48px;
+            height: 3px;
+            background: var(--red);
+            margin-bottom: 36px;
+        }
+
+        /* ── CARD BASE ── */
+        .dash-card {
+            background: var(--card);
+            border: 1px solid var(--border);
             border-radius: var(--radius);
-            box-shadow:
-                0 1px 1px rgba(255, 255, 255, 0.6) inset,
-                0 8px 32px rgba(31, 38, 71, 0.08);
         }
 
         /* ── STATS ROW ── */
         .stats-row {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 28px;
+            gap: 14px;
+            margin-bottom: 32px;
         }
 
         .stat-card {
@@ -162,11 +205,11 @@
         .stat-icon-wrap {
             width: 34px;
             height: 34px;
-            border-radius: 10px;
+            border-radius: var(--radius);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
         }
 
         .stat-icon-wrap svg {
@@ -211,23 +254,24 @@
             font-weight: 800;
             letter-spacing: -0.02em;
             line-height: 1;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
+            color: var(--white);
         }
 
         .stat-label {
             font-size: 12.5px;
             font-weight: 600;
-            color: var(--ink-soft);
+            color: var(--silver-dim);
         }
 
         /* ── SECTION ── */
         .section-label {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.2em;
             text-transform: uppercase;
-            color: var(--ink-faint);
-            margin-bottom: 14px;
+            color: var(--red);
+            margin-bottom: 16px;
             padding-left: 2px;
         }
 
@@ -235,33 +279,32 @@
         .tools-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
+            gap: 14px;
             margin-bottom: 32px;
         }
 
         .tool-tile {
+            position: relative;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             padding: 26px;
             min-height: 168px;
             text-decoration: none;
-            color: var(--ink);
-            transition: transform 0.18s, box-shadow 0.18s;
+            color: var(--white);
+            transition: border-color 0.2s, transform 0.18s;
         }
 
         .tool-tile:hover {
-            transform: translateY(-3px);
-            box-shadow:
-                0 1px 1px rgba(255, 255, 255, 0.6) inset,
-                0 16px 40px rgba(31, 38, 71, 0.14);
+            border-color: rgba(200, 16, 46, 0.4);
+            transform: translateY(-2px);
         }
 
         .tool-tile-icon-wrap {
             width: 46px;
             height: 46px;
-            border-radius: 14px;
-            background: linear-gradient(135deg, var(--red), #8E0C22);
+            border-radius: var(--radius);
+            background: linear-gradient(135deg, var(--red), var(--red-dark));
             display: flex;
             align-items: center;
             justify-content: center;
@@ -275,15 +318,17 @@
         }
 
         .tool-tile-name {
-            font-size: 17px;
-            font-weight: 700;
-            margin-top: 16px;
-            margin-bottom: 4px;
+            font-family: var(--font-display);
+            font-size: 20px;
+            letter-spacing: 0.04em;
+            margin-top: 18px;
+            margin-bottom: 6px;
+            color: var(--white);
         }
 
         .tool-tile-desc {
             font-size: 13px;
-            color: var(--ink-soft);
+            color: var(--silver-dim);
             line-height: 1.4;
         }
 
@@ -297,26 +342,6 @@
             font-weight: 700;
             padding: 3px 9px;
             border-radius: 100px;
-        }
-
-        .tool-tile {
-            position: relative;
-        }
-
-        .tool-tile-placeholder {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            min-height: 168px;
-            padding: 26px;
-            border: 1.5px dashed rgba(120, 120, 130, 0.25);
-            border-radius: var(--radius);
-            color: var(--ink-faint);
-            font-size: 13px;
-            font-weight: 600;
-            background: rgba(255, 255, 255, 0.25);
         }
 
         @media (max-width: 900px) {
@@ -345,6 +370,52 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* ── MOBILE TOPBAR ── */
+        @media (max-width: 480px) {
+            .topbar {
+                padding: 0 16px;
+                height: 56px;
+            }
+
+            .topbar-brand-mark {
+                width: 26px;
+                height: 26px;
+                font-size: 11px;
+            }
+
+            .topbar-brand-main {
+                font-size: 15px;
+            }
+
+            .topbar-brand-sub {
+                font-size: 8.5px;
+                letter-spacing: 0.2em;
+            }
+
+            .topbar-actions {
+                gap: 6px;
+            }
+
+            /* Collapse pill buttons to icon-only so they don't crowd
+               the brand text on narrow screens */
+            .pill-link {
+                padding: 9px;
+                gap: 0;
+            }
+
+            .pill-link-text {
+                display: none;
+            }
+
+            .shell {
+                padding-top: 28px;
+            }
+
+            .greeting {
+                font-size: 32px;
+            }
+        }
     </style>
 </head>
 
@@ -352,22 +423,25 @@
     <div class="topbar">
         <div class="topbar-brand">
             <div class="topbar-brand-mark">TA</div>
-            Triangle Auto Works — Admin
+            <div class="topbar-brand-text">
+                <div class="topbar-brand-main">Triangle Auto Works</div>
+                <div class="topbar-brand-sub">Admin</div>
+            </div>
         </div>
         <div class="topbar-actions">
-            <a href="/settings" class="glass-pill-link">
+            <a href="/settings" class="pill-link" aria-label="Settings">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="3" />
                     <path
                         d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
                 </svg>
-                Settings
+                <span class="pill-link-text">Settings</span>
             </a>
-            <a href="/" class="glass-pill-link">
+            <a href="/" class="pill-link" aria-label="Back to Site">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="15 18 9 12 15 6" />
                 </svg>
-                Back to Site
+                <span class="pill-link-text">Back to Site</span>
             </a>
         </div>
     </div>
@@ -381,9 +455,10 @@
         <div class="greeting-sub">
             <%= new Date().toLocaleDateString('en-US', { weekday: 'long' , month: 'long' , day: 'numeric' }) %>
         </div>
+        <div class="red-rule"></div>
 
         <div class="stats-row">
-            <div class="glass-card stat-card tone-red">
+            <div class="dash-card stat-card tone-red">
                 <div class="stat-icon-wrap">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
@@ -398,7 +473,7 @@
                 </div>
                 <div class="stat-label">On the schedule today</div>
             </div>
-            <div class="glass-card stat-card tone-green">
+            <div class="dash-card stat-card tone-green">
                 <div class="stat-icon-wrap">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
@@ -410,7 +485,7 @@
                 </div>
                 <div class="stat-label">Confirmed revenue this week</div>
             </div>
-            <div class="glass-card stat-card tone-amber">
+            <div class="dash-card stat-card tone-amber">
                 <div class="stat-icon-wrap">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
@@ -423,7 +498,7 @@
                 </div>
                 <div class="stat-label">Pending quotes to follow up</div>
             </div>
-            <div class="glass-card stat-card tone-blue">
+            <div class="dash-card stat-card tone-blue">
                 <div class="stat-icon-wrap">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
@@ -439,7 +514,7 @@
 
         <div class="section-label">Tools</div>
         <div class="tools-grid">
-            <a href="/admin/bookings" class="glass-card tool-tile">
+            <a href="/admin/bookings" class="dash-card tool-tile">
                 <div class="tool-tile-icon-wrap">
                     <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
@@ -460,7 +535,7 @@
                         </div>
             </a>
 
-            <a href="/admin/users" class="glass-card tool-tile">
+            <a href="/admin/users" class="dash-card tool-tile">
                 <div class="tool-tile-icon-wrap">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -476,7 +551,7 @@
                 </div>
             </a>
 
-            <a href="/admin/site" class="glass-card tool-tile">
+            <a href="/admin/site" class="dash-card tool-tile">
                 <div class="tool-tile-icon-wrap">
                     <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
