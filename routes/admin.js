@@ -80,6 +80,7 @@ router.get('/bookings', ensureAdmin, async (req, res) => {
         const { status } = req.query
         const filter = (status && status !== 'all') ? { status } : {}
         const bookings = await Booking.find(filter).sort({ createdAt: -1 })
+        console.log(bookings)
         res.render('admin/bookings', { bookings, currentStatus: status || 'all' })
     } catch (err) {
         console.error(err)
@@ -96,7 +97,7 @@ router.get('/bookings/:id', ensureAdmin, async (req, res) => {
             req.flash('errorMessage', 'Booking not found.')
             return res.redirect('/admin/bookings')
         }
-        res.render('admin/booking-detail', { booking })
+        res.render('admin/booking', { booking })
     } catch (err) {
         console.error(err)
         req.flash('errorMessage', 'Failed to load booking.')

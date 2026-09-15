@@ -50,8 +50,18 @@
   }
 
   // Each section describes: its table columns, and the form fields for
-  // the add/edit modal. One generic render/CRUD flow drives all seven —
-  // adding an eighth section later just means adding a config entry here.
+  // the add/edit modal. One generic render/CRUD flow drives all sections —
+  // adding another one later just means adding a config entry here.
+  //
+  // A section can optionally set `groupBy` to render as an accordion of
+  // grouped mini-tables instead of one flat table:
+  //   groupBy.fieldKey   — which item field to group on (e.g. "brand")
+  //   groupBy.itemFilter — optional (item) => boolean, applied before
+  //     grouping, for sections that should only show a subset of a
+  //     shared underlying array.
+  //
+  // `defaults` (optional) supplies field values that are always injected
+  // into the save payload but never shown as an editable input.
   const SECTIONS = {
     'oil-products': {
       label: 'Oil Products',
@@ -97,8 +107,12 @@
     },
     'filter-overrides': {
       label: 'Filter Overrides',
+      groupBy: {
+        fieldKey: 'brand',
+        emptyMessage: 'No vehicle-specific overrides yet.',
+        addButtonLabel: (groupValue) => `+ Add for ${groupValue}`,
+      },
       columns: [
-        { key: 'brand', label: 'Brand' },
         { key: 'filterType', label: 'Type' },
         { key: 'make', label: 'Make' },
         { key: 'model', label: 'Model' },
@@ -168,18 +182,40 @@
     },
   };
 
+  // Maps each admin section key to the PartsCatalog array field it reads.
+  const FIELD_MAP = {
+    'oil-products': 'oilProducts',
+    'filter-brands': 'filterBrands',
+    'filter-overrides': 'filterOverrides',
+    'brake-pads': 'brakePadTypes',
+    rotors: 'rotorOptions',
+    'tire-services': 'tireServiceTypes',
+    suppliers: 'suppliers',
+  };
+
   let currentSection = 'oil-products';
-  let currentItems = [];
+  let currentItems = []; // full unfiltered array for currentSection's catalog field
+  let modalPresetValues = null; // set when "+ Add for <group>" is used
 
   const tabsEl = document.getElementById('tabs');
   const itemsHead = document.getElementById('itemsHead');
   const itemsBody = document.getElementById('itemsBody');
+  const tableEl = document.getElementById('itemsTable');
   const emptyState = document.getElementById('emptyState');
   const errorBanner = document.getElementById('errorBanner');
   const modalBackdrop = document.getElementById('modalBackdrop');
   const modalTitle = document.getElementById('modalTitle');
   const formFields = document.getElementById('formFields');
   const itemForm = document.getElementById('itemForm');
+  const toolbarEl = document.querySelector('.toolbar');
+
+  // Container for grouped (accordion) rendering, inserted right after
+  // the flat table so both can share the same "empty state" element and
+  // toggle visibility based on whether the current section groups.
+  const groupedContainer = document.createElement('div');
+  groupedContainer.className = 'accordion';
+  groupedContainer.id = 'groupedContainer';
+  tableEl.insertAdjacentElement('afterend', groupedContainer);
 
   // Vehicle make/model data, embedded into the page by the server
   // (admin/parts.ejs sets window.VEHICLE_DATA before this script loads).
@@ -217,16 +253,7 @@
       return;
     }
     const catalog = await res.json();
-    const fieldMap = {
-      'oil-products': 'oilProducts',
-      'filter-brands': 'filterBrands',
-      'filter-overrides': 'filterOverrides',
-      'brake-pads': 'brakePadTypes',
-      rotors: 'rotorOptions',
-      'tire-services': 'tireServiceTypes',
-      suppliers: 'suppliers',
-    };
-    currentItems = catalog[fieldMap[currentSection]] || [];
+    currentItems = catalog[FIELD_MAP[currentSection]] || [];
     renderTable();
   }
 
@@ -244,44 +271,133 @@
   function renderTable() {
     const config = SECTIONS[currentSection];
 
+    if (config.groupBy) {
+      tableEl.style.display = 'none';
+      groupedContainer.style.display = '';
+      renderGroupedTable(config);
+      return;
+    }
+
+    tableEl.style.display = '';
+    groupedContainer.style.display = 'none';
+    groupedContainer.innerHTML = '';
+
     itemsHead.innerHTML = `<tr>${config.columns.map(c => `<th>${escapeHtml(c.label)}</th>`).join('')}<th></th></tr>`;
     itemsBody.innerHTML = '';
 
     if (currentItems.length === 0) {
+      emptyState.textContent = 'No entries yet in this section.';
       emptyState.style.display = 'block';
       return;
     }
     emptyState.style.display = 'none';
 
     for (const item of currentItems) {
-      const tr = document.createElement('tr');
-      tr.dataset.itemId = item._id;
-
-      const cells = config.columns.map(c => {
-        const raw = item[c.key];
-        const display = c.format ? c.format(raw) : escapeHtml(raw);
-        return `<td data-label="${escapeHtml(c.label)}">${display}</td>`;
-      }).join('');
-
-      tr.innerHTML = `
-        ${cells}
-        <td>
-          <div class="row-actions">
-            <button class="icon-btn" data-action="edit-item" data-id="${item._id}" aria-label="Edit">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
-              </svg>
-            </button>
-            <button class="icon-btn" data-action="delete-item" data-id="${item._id}" aria-label="Delete">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-              </svg>
-            </button>
-          </div>
-        </td>
-      `;
-      itemsBody.appendChild(tr);
+      itemsBody.appendChild(buildRow(item, config.columns));
     }
+  }
+
+  // Builds one <tr> for either the flat table or a grouped mini-table.
+  // `columns` excludes whatever field the section groups on, since that
+  // value is already shown in the group's header.
+  function buildRow(item, columns) {
+    const tr = document.createElement('tr');
+    tr.dataset.itemId = item._id;
+
+    const cells = columns.map(c => {
+      const raw = item[c.key];
+      const display = c.format ? c.format(raw) : escapeHtml(raw);
+      return `<td data-label="${escapeHtml(c.label)}">${display}</td>`;
+    }).join('');
+
+    tr.innerHTML = `
+      ${cells}
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" data-action="edit-item" data-id="${item._id}" aria-label="Edit">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+            </svg>
+          </button>
+          <button class="icon-btn" data-action="delete-item" data-id="${item._id}" aria-label="Delete">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+        </div>
+      </td>
+    `;
+    return tr;
+  }
+
+  // Groups currentItems by config.groupBy.fieldKey (after applying
+  // itemFilter), then renders one accordion card per group — each with
+  // its own mini-table (config.columns, minus the group field) and a
+  // "+ Add for <group>" button that preselects that group's value.
+  function renderGroupedTable(config) {
+    const gb = config.groupBy;
+    const filtered = currentItems.filter(item => (gb.itemFilter ? gb.itemFilter(item) : true));
+
+    itemsBody.innerHTML = '';
+    itemsHead.innerHTML = '';
+
+    if (filtered.length === 0) {
+      emptyState.textContent = gb.emptyMessage || 'No entries yet in this section.';
+      emptyState.style.display = 'block';
+      groupedContainer.innerHTML = '';
+      return;
+    }
+    emptyState.style.display = 'none';
+
+    const groups = new Map();
+    filtered.forEach(item => {
+      const groupValue = item[gb.fieldKey] || '(unset)';
+      if (!groups.has(groupValue)) groups.set(groupValue, []);
+      groups.get(groupValue).push(item);
+    });
+
+    const sortedGroupValues = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b));
+
+    groupedContainer.innerHTML = '';
+    sortedGroupValues.forEach(groupValue => {
+      const items = groups.get(groupValue);
+      const card = document.createElement('div');
+      card.className = 'pgroup-card';
+
+      const header = document.createElement('div');
+      header.className = 'pgroup-header';
+      header.innerHTML = `
+        <div class="pgroup-header-left">
+          <span class="pgroup-name">${escapeHtml(groupValue)}</span>
+          <span class="pgroup-meta">${items.length} entr${items.length === 1 ? 'y' : 'ies'}</span>
+        </div>
+        <div class="pgroup-header-actions">
+          <button type="button" class="pgroup-add-btn" data-action="add-to-group" data-group-value="${escapeHtml(groupValue)}">
+            ${escapeHtml((gb.addButtonLabel ? gb.addButtonLabel(groupValue) : '+ Add'))}
+          </button>
+          <svg class="pgroup-chevron" width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M1 1L7 7L1 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      `;
+      header.addEventListener('click', (e) => {
+        if (e.target.closest('[data-action]')) return; // let the add button handle its own click
+        card.classList.toggle('open');
+      });
+
+      const body = document.createElement('div');
+      body.className = 'pgroup-body';
+      const tableWrap = document.createElement('div');
+      tableWrap.className = 'table-wrap';
+      const table = document.createElement('table');
+      table.innerHTML = `<thead><tr>${config.columns.map(c => `<th>${escapeHtml(c.label)}</th>`).join('')}<th></th></tr></thead><tbody></tbody>`;
+      const tbody = table.querySelector('tbody');
+      items.forEach(item => tbody.appendChild(buildRow(item, config.columns)));
+      tableWrap.appendChild(table);
+      body.appendChild(tableWrap);
+
+      card.appendChild(header);
+      card.appendChild(body);
+      groupedContainer.appendChild(card);
+    });
   }
 
   // Build the <option> list for every make in VEHICLE_DATA, alphabetized.
@@ -352,9 +468,29 @@
     `;
   }
 
+  // Fields present in config.defaults or in the active modalPresetValues
+  // are never rendered as inputs — they're shown as a plain read-only
+  // line (if a preset forced them for this add) or omitted entirely (if
+  // they're a permanent section-wide default, like brand: 'OEM'), and
+  // their value is injected into the payload in collectFormPayload().
   function renderFormFields(item) {
     const config = SECTIONS[currentSection];
-    formFields.innerHTML = config.fields.map(f => {
+    const forcedKeys = new Set(Object.keys(config.defaults || {}));
+    const presetKeys = modalPresetValues ? Object.keys(modalPresetValues) : [];
+
+    let html = '';
+
+    // Show a read-only line for any field locked via "+ Add for <group>"
+    // (only relevant on add, never on edit — edits always show real fields).
+    if (!item && modalPresetValues) {
+      presetKeys.forEach(key => {
+        const fieldDef = config.fields.find(f => f.key === key);
+        const label = fieldDef ? fieldDef.label : key;
+        html += `<div class="field"><label>${escapeHtml(label)}</label><input type="text" value="${escapeHtml(modalPresetValues[key])}" disabled></div>`;
+      });
+    }
+
+    html += config.fields.filter(f => !forcedKeys.has(f.key) && !presetKeys.includes(f.key)).map(f => {
       const rawVal = item ? item[f.key] : undefined;
       const fieldId = 'f_' + f.key;
 
@@ -364,7 +500,7 @@
       }
 
       if (f.type === 'vehicle-model') {
-        const currentMake = item ? item.make : '';
+        const currentMake = item ? item.make : (modalPresetValues && modalPresetValues.make) || '';
         const currentVal = item ? item[f.key] : '';
         return `<div class="field"><label for="${fieldId}">${escapeHtml(f.label)}${f.required ? ' *' : ''}</label><select id="${fieldId}">${modelOptionsHtml(currentMake, currentVal)}</select></div>`;
       }
@@ -397,10 +533,12 @@
       `;
     }).join('');
 
+    formFields.innerHTML = html;
     bindMakeModelCascade();
   }
 
-  function openModal(item) {
+  function openModal(item, presetValues) {
+    modalPresetValues = presetValues || null;
     document.getElementById('itemId').value = item ? item._id : '';
     modalTitle.textContent = item ? 'Edit Entry' : 'Add Entry';
     renderFormFields(item);
@@ -409,12 +547,15 @@
 
   function closeModal() {
     modalBackdrop.classList.remove('open');
+    modalPresetValues = null;
   }
 
   function collectFormPayload() {
     const config = SECTIONS[currentSection];
-    const payload = {};
+    const payload = { ...(config.defaults || {}), ...(modalPresetValues || {}) };
+
     for (const f of config.fields) {
+      if (payload[f.key] !== undefined) continue; // forced default or group preset — never read from a (nonexistent) input
       const fieldId = 'f_' + f.key;
 
       if (f.type === 'checklist') {
@@ -424,6 +565,7 @@
       }
 
       const el = document.getElementById(fieldId);
+      if (!el) continue;
       let value = el.value;
 
       if (f.type === 'number') {
@@ -509,12 +651,16 @@
 
     const action = actionEl.dataset.action;
     if (action === 'open-add-modal') {
-      openModal(null);
+      openModal(null, null);
+    } else if (action === 'add-to-group') {
+      const config = SECTIONS[currentSection];
+      const preset = { [config.groupBy.fieldKey]: actionEl.dataset.groupValue };
+      openModal(null, preset);
     } else if (action === 'close-modal') {
       closeModal();
     } else if (action === 'edit-item') {
       const item = currentItems.find(i => i._id === actionEl.dataset.id);
-      if (item) openModal(item);
+      if (item) openModal(item, null);
     } else if (action === 'delete-item') {
       deleteItem(actionEl.dataset.id);
     }

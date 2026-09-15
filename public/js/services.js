@@ -21,20 +21,17 @@ const SERVICES = {
                 name: "Oil Change",
 
                 options: {
-                    // oilBrand is intentionally NOT a static list here — the
-                    // configurator pulls live options from
-                    // getAvailableOilBrands(requiredTier) in partsCatalog.js,
-                    // since which brands are offered depends on the
-                    // vehicle's required oil tier (see vehicleSpecs.js).
-                    filterBrand: [
-                        "Carquest",
-                        "FRAM",
-                        "K&N",
-                        "Mobil 1",
-                        "AC Delco",
-                        "Motorcraft",
-                        "OEM"
-                    ]
+                    // Neither oilBrand nor filterBrand are static lists here
+                    // — the configurator pulls both live from the catalog
+                    // (getAvailableOilBrands / getAvailableFilterBrands in
+                    // partsCatalog.js), since which brands are offered
+                    // depends on the vehicle's required oil tier and, for
+                    // filters, each brand's compatibleMakes restriction.
+                    // This also means OEM-equivalent brands (Motorcraft,
+                    // AC Delco, or anything you add — "Toyota Genuine",
+                    // "Mopar", etc.) work exactly like any other brand: add
+                    // them in the Filter Brands admin tab, optionally
+                    // restrict compatibleMakes to their manufacturer, done.
                 }
             },
 

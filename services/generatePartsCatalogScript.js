@@ -99,7 +99,10 @@ function renderFilterPartNumbers(filterOverrides) {
     // Reconstruct the nested brand -> filterType -> make -> model ->
     // (year | _default) structure from the flat list of override
     // documents. filterType defaults to 'oil' for any legacy override
-    // rows that predate the field.
+    // rows that predate the field. This includes brand: "OEM" rows
+    // (from the OEM Filters admin tab) exactly like any other brand —
+    // OEM's availability gating happens via isOemFilterAvailable() below,
+    // not by excluding it from this tree.
     const tree = {}
     for (const o of filterOverrides) {
         const filterType = o.filterType || 'oil'
@@ -141,10 +144,11 @@ function renderFilterPartNumbers(filterOverrides) {
 }
 
 // The helper functions below are copied verbatim from the original
-// public/js/partsCatalog.js, plus jugPartNumber/highMileage/viscosities
-// and the filterType parameter on getPartRecord. They contain no catalog
-// data themselves — they only read the data variables generated above —
-// so they never need to change when the admin edits the catalog.
+// public/js/partsCatalog.js, plus jugPartNumber/highMileage/viscosities,
+// the filterType parameter on getPartRecord, and the new
+// isOemFilterAvailable() check. They contain no catalog data themselves —
+// they only read the data variables generated above — so they never need
+// to change when the admin edits the catalog.
 const HELPER_FUNCTIONS_SOURCE = `
 function makePart({
     partNumber = null,
@@ -209,6 +213,15 @@ function getAvailableFilterBrands(make) {
     });
 }
 
+// Resolves the FILTER_PART_NUMBERS entry (year-specific, falling back to
+// _default) for a given brand/filterType/vehicle, or null if none exists.
+function resolveFilterOverride(brand, filterType, make, model, year) {
+    const override = FILTER_PART_NUMBERS?.[brand]?.[filterType]?.[make]?.[model];
+    if (!override) return null;
+    const yearOverride = year ? override[String(year)] : null;
+    return yearOverride || override._default || null;
+}
+
 // filterType defaults to "oil" so every existing call site (oil-change
 // filter selection) keeps working unchanged. Pass "engine" or "cabin"
 // explicitly for those add-on pickers.
@@ -217,19 +230,15 @@ function getPartRecord(serviceKey, optionGroup, optionValue, vehicle = null, fil
     const base = record || makePart();
 
     if (serviceKey === 'oilChange' && optionGroup === 'filterBrand' && vehicle?.make && vehicle?.model) {
-        const override = FILTER_PART_NUMBERS?.[optionValue]?.[filterType]?.[vehicle.make]?.[vehicle.model];
-        if (override) {
-            const yearOverride = vehicle.year ? override[String(vehicle.year)] : null;
-            const chosen = yearOverride || override._default;
-            if (chosen) {
-                return {
-                    ...base,
-                    partNumber: chosen.partNumber ?? base.partNumber,
-                    price: chosen.price ?? base.price,
-                    url: chosen.url ?? base.url,
-                    isPlaceholder: false
-                };
-            }
+        const chosen = resolveFilterOverride(optionValue, filterType, vehicle.make, vehicle.model, vehicle.year);
+        if (chosen) {
+            return {
+                ...base,
+                partNumber: chosen.partNumber ?? base.partNumber,
+                price: chosen.price ?? base.price,
+                url: chosen.url ?? base.url,
+                isPlaceholder: false
+            };
         }
     }
 

@@ -57,6 +57,7 @@ nav {
     align-items: center;
     gap: 12px;
     text-decoration: none;
+    min-width: 0;
 }
 
 .nav-wordmark {
@@ -65,6 +66,7 @@ nav {
     letter-spacing: 0.06em;
     color: var(--white);
     line-height: 1;
+    white-space: nowrap;
 }
 
 .nav-wordmark span {
@@ -88,6 +90,7 @@ nav {
     letter-spacing: 0.08em;
     text-transform: uppercase;
     transition: color 0.2s;
+    flex-shrink: 0;
 }
 
 .nav-back:hover {
@@ -98,6 +101,7 @@ nav {
     width: 16px;
     height: 16px;
     stroke: currentColor;
+    flex-shrink: 0;
 }
 
 /* ── LAYOUT ── */
@@ -312,6 +316,7 @@ nav {
     gap: 0;
     margin-bottom: 28px;
     border-bottom: 1px solid var(--border);
+    overflow-x: auto;
 }
 
 .vin-tab {
@@ -328,6 +333,7 @@ nav {
     position: relative;
     transition: color 0.2s;
     margin-right: 20px;
+    white-space: nowrap;
 }
 
 .vin-tab::after {
@@ -358,6 +364,17 @@ nav {
     display: block;
 }
 
+.vin-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+.vin-row input {
+    flex: 1;
+    min-width: 0;
+}
+
 /* ── CASCADING VEHICLE PICKER ── */
 .picker-stage {
     margin-bottom: 24px;
@@ -368,6 +385,7 @@ nav {
     align-items: center;
     justify-content: space-between;
     margin-bottom: 12px;
+    gap: 10px;
 }
 
 .picker-stage-label {
@@ -494,6 +512,7 @@ nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
     margin-bottom: 0;
 }
 
@@ -714,6 +733,7 @@ nav {
 
 .service-option-info {
     flex: 1;
+    min-width: 0;
 }
 
 .service-option-name {
@@ -1018,6 +1038,7 @@ nav {
 .btn-primary {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
     background: var(--red);
     color: var(--white);
@@ -1047,6 +1068,7 @@ nav {
 .btn-ghost {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     background: transparent;
     color: var(--silver);
@@ -1218,6 +1240,148 @@ nav {
 
     .progress-step-label {
         display: none;
+    }
+}
+
+/* ── PHONE-WIDTH REFINEMENTS ──
+   The 900px breakpoint above handles the big layout shift (sidebar
+   gone, grids to 1 column). Below this, several pieces that still
+   assumed at least tablet-ish width need their own handling: the
+   progress bar's 6 numbered steps + connectors add up to wider than a
+   phone screen even with labels hidden, the nav logo/back-link crowd
+   each other, the Back/Continue buttons are hard to tap accurately
+   side-by-side, and a few grids (location cards, VIN decoded fields)
+   are still fixed at counts that don't fit comfortably at this width. */
+@media (max-width: 480px) {
+    nav {
+        padding: 0 16px;
+        height: 56px;
+    }
+
+    .nav-wordmark {
+        font-size: 18px;
+    }
+
+    .nav-wordmark span {
+        font-size: 9px;
+    }
+
+    .nav-back span {
+        display: none;
+    }
+
+    .booking-layout {
+        padding-top: 56px;
+    }
+
+    .booking-main {
+        padding: 28px 16px 48px;
+    }
+
+    /* Progress bar: numbers + connectors no longer try to fit full width
+       on one row — let it scroll horizontally instead of clipping or
+       forcing the page wider than the viewport. */
+    .progress-bar {
+        margin-bottom: 32px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .progress-bar::-webkit-scrollbar {
+        height: 3px;
+    }
+
+    .progress-connector {
+        min-width: 14px;
+        margin: 0 6px;
+    }
+
+    .step-eyebrow {
+        font-size: 10px;
+        margin-bottom: 8px;
+    }
+
+    .step-title {
+        margin-bottom: 24px;
+    }
+
+    .red-rule {
+        margin-bottom: 24px;
+    }
+
+    /* Back/Continue: full-width and stacked instead of side-by-side, so
+       each is an easy full-width tap target instead of two half-width
+       buttons crowding a narrow row. */
+    .step-nav {
+        flex-direction: column-reverse;
+        gap: 10px;
+        margin-top: 28px;
+        padding-top: 24px;
+    }
+
+    .step-nav .btn-primary,
+    .step-nav .btn-ghost {
+        width: 100%;
+    }
+
+    .category-card {
+        padding: 22px 16px;
+    }
+
+    .location-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .service-option {
+        padding: 14px 16px;
+    }
+
+    .picker-grid {
+        grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+        max-height: 240px;
+    }
+
+    .picker-grid.models-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    }
+
+    .year-row {
+        grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+    }
+
+    .vin-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .vin-row .btn-primary {
+        margin-top: 0 !important;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .vin-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .confirm-summary {
+        padding: 20px;
+    }
+
+    .confirm-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
+
+    .confirm-row-val {
+        text-align: left;
+    }
+
+    .success-title {
+        font-size: 38px;
     }
 }
 

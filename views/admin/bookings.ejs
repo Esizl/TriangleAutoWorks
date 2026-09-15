@@ -6,29 +6,32 @@
     <title>Bookings — Triangle Auto Works</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #FAFAFA;
-            --surface: #FFFFFF;
-            --ink: #1D1D1F;
-            --ink-soft: #6E6E73;
-            --ink-faint: #AEAEB2;
-            --line: rgba(0,0,0,0.07);
+            --black: #0A0A0A;
+            --card: #141414;
+            --card2: #1C1C1C;
             --red: #C8102E;
-            --red-soft: rgba(200,16,46,0.08);
+            --red-dark: #9E0C24;
+            --red-soft: rgba(200, 16, 46, 0.12);
+            --silver: #C0C0C0;
+            --silver-dim: #7A7A7A;
+            --white: #F5F5F5;
+            --text: #CCCCCC;
+            --border: rgba(255, 255, 255, 0.07);
             --amber: #E8B339;
-            --blue: #0071E3;
-            --green: #1E8E5A;
-            --gray: #98989D;
-            --radius: 14px;
-            --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+            --blue: #4F9DFF;
+            --green: #4ADE80;
+            --radius: 4px;
+            --font-display: 'Bebas Neue', sans-serif;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { -webkit-font-smoothing: antialiased; }
         body {
-            background: var(--bg);
-            color: var(--ink);
+            background: var(--black);
+            color: var(--white);
             font-family: var(--font);
             font-size: 15px;
             line-height: 1.45;
@@ -38,9 +41,9 @@
             position: sticky;
             top: 0;
             z-index: 10;
-            background: rgba(250,250,250,0.85);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--line);
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(200, 16, 46, 0.25);
             padding: 0 32px;
             height: 60px;
             display: flex;
@@ -48,26 +51,29 @@
             justify-content: space-between;
         }
         .topbar-title {
-            font-size: 17px;
-            font-weight: 600;
-            letter-spacing: -0.01em;
+            font-family: var(--font-display);
+            font-size: 19px;
+            letter-spacing: 0.03em;
+            color: var(--white);
         }
         .topbar-meta {
             font-size: 13px;
-            color: var(--ink-soft);
+            color: var(--silver-dim);
         }
         .topbar-back {
             display: flex;
             align-items: center;
             gap: 6px;
-            color: var(--ink-soft);
+            color: var(--silver-dim);
             text-decoration: none;
             font-size: 13px;
             font-weight: 600;
             transition: color 0.15s;
         }
-        .topbar-back:hover { color: var(--ink); }
+        .topbar-back:hover { color: var(--white); }
         .topbar-back svg { width: 13px; height: 13px; stroke: currentColor; }
+        .topbar-center { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+        .topbar-spacer { width: 90px; flex-shrink: 0; }
 
         .shell {
             max-width: 1080px;
@@ -82,13 +88,14 @@
             margin-bottom: 28px;
         }
         .page-heading h1 {
-            font-size: 30px;
-            font-weight: 700;
-            letter-spacing: -0.02em;
+            font-family: var(--font-display);
+            font-size: 38px;
+            letter-spacing: 0.03em;
+            color: var(--white);
         }
         .page-heading .count {
             font-size: 14px;
-            color: var(--ink-soft);
+            color: var(--silver-dim);
             font-weight: 500;
         }
 
@@ -100,36 +107,36 @@
         }
         .filters a {
             text-decoration: none;
-            color: var(--ink-soft);
+            color: var(--silver-dim);
             font-size: 13px;
             font-weight: 500;
             padding: 6px 14px;
             border-radius: 100px;
             transition: background 0.15s, color 0.15s;
         }
-        .filters a:hover { background: rgba(0,0,0,0.04); }
+        .filters a:hover { background: var(--card2); color: var(--white); }
         .filters a.active {
-            background: var(--ink);
-            color: var(--surface);
+            background: var(--red);
+            color: var(--white);
         }
 
         .group {
             margin-bottom: 36px;
         }
         .group-label {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--ink-soft);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--red);
             text-transform: uppercase;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.15em;
             margin-bottom: 10px;
             padding-left: 4px;
         }
 
         .card-list {
-            background: var(--surface);
+            background: var(--card);
             border-radius: var(--radius);
-            border: 1px solid var(--line);
+            border: 1px solid var(--border);
             overflow: hidden;
         }
         .booking-row {
@@ -138,12 +145,12 @@
             gap: 16px;
             padding: 16px 20px;
             text-decoration: none;
-            color: var(--ink);
-            border-bottom: 1px solid var(--line);
+            color: var(--white);
+            border-bottom: 1px solid var(--border);
             transition: background 0.12s;
         }
         .card-list .booking-row:last-child { border-bottom: none; }
-        .booking-row:hover { background: rgba(0,0,0,0.015); }
+        .booking-row:hover { background: var(--card2); }
 
         .status-dot {
             width: 8px;
@@ -154,8 +161,8 @@
         .status-dot.new { background: var(--amber); }
         .status-dot.contacted { background: var(--blue); }
         .status-dot.confirmed { background: var(--green); }
-        .status-dot.completed { background: var(--gray); }
-        .status-dot.cancelled { background: var(--red); opacity: 0.6; }
+        .status-dot.completed { background: var(--silver-dim); }
+        .status-dot.cancelled { background: var(--red); opacity: 0.7; }
 
         .row-main {
             flex: 1;
@@ -170,26 +177,27 @@
         .row-customer-name {
             font-weight: 600;
             font-size: 14.5px;
+            color: var(--white);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .row-customer-phone {
             font-size: 12.5px;
-            color: var(--ink-faint);
+            color: var(--silver-dim);
         }
         .row-vehicle {
             flex: 1;
             min-width: 0;
             font-size: 14px;
-            color: var(--ink-soft);
+            color: var(--text);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .row-services {
             font-size: 13px;
-            color: var(--ink-faint);
+            color: var(--silver-dim);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -198,7 +206,7 @@
         }
         .row-time {
             font-size: 13px;
-            color: var(--ink-soft);
+            color: var(--text);
             text-align: right;
             min-width: 92px;
             flex-shrink: 0;
@@ -206,12 +214,13 @@
         .row-total {
             font-size: 14px;
             font-weight: 600;
+            color: var(--white);
             min-width: 64px;
             text-align: right;
             flex-shrink: 0;
         }
         .chevron {
-            color: var(--ink-faint);
+            color: var(--silver-dim);
             flex-shrink: 0;
         }
 
@@ -220,18 +229,115 @@
         }
 
         .empty {
-            background: var(--surface);
-            border: 1px solid var(--line);
+            background: var(--card);
+            border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: 64px 24px;
             text-align: center;
-            color: var(--ink-soft);
+            color: var(--silver-dim);
             font-size: 14px;
         }
 
         a:focus-visible, .filters a:focus-visible {
             outline: 2px solid var(--blue);
             outline-offset: 2px;
+        }
+
+        /* ── MOBILE TOPBAR ──
+           The title + date group and the balancing spacer were sized for
+           desktop. On a phone, "Triangle Auto Works — Admin" plus the
+           full date plus the back link no longer fit in one 60px-tall
+           row, so we drop the spacer (it only existed to visually
+           center the title against the back link), hide the date, and
+           let the title truncate with an ellipsis instead of wrapping
+           or overflowing. */
+        @media (max-width: 480px) {
+            .topbar {
+                padding: 0 16px;
+            }
+
+            .topbar-spacer {
+                display: none;
+            }
+
+            .topbar-center {
+                flex: 1;
+                justify-content: flex-end;
+                overflow: hidden;
+            }
+
+            .topbar-title {
+                font-size: 15px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .topbar-meta {
+                display: none;
+            }
+
+            .shell {
+                padding: 24px 16px 80px;
+            }
+
+            /* ── MOBILE BOOKING ROW ──
+               The desktop row relies on fixed min-widths (row-customer
+               alone floors at 150px) that add up to more than a phone
+               screen has, so it would force horizontal crowding rather
+               than wrapping. Re-lay the same elements into a 2-line
+               grid instead: name + price on top, vehicle + time below.
+               row-main is set to display:contents so its children
+               (row-customer, row-vehicle) become direct grid items
+               here instead of being trapped in their own flex row. */
+            .booking-row {
+                display: grid;
+                grid-template-columns: auto 1fr auto;
+                grid-template-areas:
+                    "dot   name    total"
+                    "dot   vehicle time";
+                column-gap: 10px;
+                row-gap: 4px;
+                align-items: center;
+                padding: 14px 16px;
+            }
+
+            .row-main {
+                display: contents;
+            }
+
+            .status-dot {
+                grid-area: dot;
+                align-self: start;
+                margin-top: 6px;
+            }
+
+            .row-customer {
+                grid-area: name;
+                min-width: 0;
+            }
+
+            .row-vehicle {
+                grid-area: vehicle;
+                font-size: 12.5px;
+                min-width: 0;
+            }
+
+            .row-time {
+                grid-area: time;
+                text-align: left;
+                font-size: 12px;
+                min-width: 0;
+            }
+
+            .row-total {
+                grid-area: total;
+                min-width: 0;
+            }
+
+            .chevron {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -241,11 +347,11 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             Dashboard
         </a>
-        <div style="display:flex; align-items:baseline; gap:12px;">
+        <div class="topbar-center">
             <div class="topbar-title">Triangle Auto Works — Admin</div>
             <div class="topbar-meta"><%= new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) %></div>
         </div>
-        <div style="width:90px"></div>
+        <div class="topbar-spacer"></div>
     </div>
 
     <div class="shell">

@@ -6,29 +6,35 @@
     <title>Users — Triangle Auto Works</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #FAFAFA;
-            --surface: #FFFFFF;
-            --ink: #1D1D1F;
-            --ink-soft: #6E6E73;
-            --ink-faint: #AEAEB2;
-            --line: rgba(0,0,0,0.07);
+            --black: #0A0A0A;
+            --card: #141414;
+            --card2: #1C1C1C;
             --red: #C8102E;
-            --red-soft: rgba(200,16,46,0.08);
+            --red-dark: #9E0C24;
+            --red-soft: rgba(200, 16, 46, 0.12);
+            --silver: #C0C0C0;
+            --silver-dim: #7A7A7A;
+            --white: #F5F5F5;
+            --text: #CCCCCC;
+            --border: rgba(255, 255, 255, 0.07);
             --amber: #E8B339;
-            --blue: #0071E3;
-            --green: #1E8E5A;
-            --gray: #98989D;
-            --radius: 14px;
-            --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+            --amber-soft: rgba(232, 179, 57, 0.12);
+            --blue: #4F9DFF;
+            --blue-soft: rgba(79, 157, 255, 0.12);
+            --green: #4ADE80;
+            --green-soft: rgba(74, 222, 128, 0.12);
+            --radius: 4px;
+            --font-display: 'Bebas Neue', sans-serif;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { -webkit-font-smoothing: antialiased; }
         body {
-            background: var(--bg);
-            color: var(--ink);
+            background: var(--black);
+            color: var(--white);
             font-family: var(--font);
             font-size: 15px;
             line-height: 1.45;
@@ -38,9 +44,9 @@
             position: sticky;
             top: 0;
             z-index: 10;
-            background: rgba(250,250,250,0.85);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--line);
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(200, 16, 46, 0.25);
             padding: 0 32px;
             height: 60px;
             display: flex;
@@ -48,26 +54,29 @@
             justify-content: space-between;
         }
         .topbar-title {
-            font-size: 17px;
-            font-weight: 600;
-            letter-spacing: -0.01em;
+            font-family: var(--font-display);
+            font-size: 19px;
+            letter-spacing: 0.03em;
+            color: var(--white);
         }
         .topbar-meta {
             font-size: 13px;
-            color: var(--ink-soft);
+            color: var(--silver-dim);
         }
         .topbar-back {
             display: flex;
             align-items: center;
             gap: 6px;
-            color: var(--ink-soft);
+            color: var(--silver-dim);
             text-decoration: none;
             font-size: 13px;
             font-weight: 600;
             transition: color 0.15s;
         }
-        .topbar-back:hover { color: var(--ink); }
+        .topbar-back:hover { color: var(--white); }
         .topbar-back svg { width: 13px; height: 13px; stroke: currentColor; }
+        .topbar-center { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+        .topbar-spacer { width: 90px; flex-shrink: 0; }
 
         .shell {
             max-width: 1080px;
@@ -82,25 +91,26 @@
             margin-bottom: 28px;
         }
         .page-heading h1 {
-            font-size: 30px;
-            font-weight: 700;
-            letter-spacing: -0.02em;
+            font-family: var(--font-display);
+            font-size: 38px;
+            letter-spacing: 0.03em;
+            color: var(--white);
         }
         .page-heading .count {
             font-size: 14px;
-            color: var(--ink-soft);
+            color: var(--silver-dim);
             font-weight: 500;
         }
 
         .flash {
             padding: 13px 16px;
-            border-radius: 10px;
+            border-radius: var(--radius);
             font-size: 13.5px;
             margin-bottom: 20px;
             font-weight: 500;
         }
-        .flash-success { background: rgba(30,142,90,0.08); border: 1px solid rgba(30,142,90,0.25); color: var(--green); }
-        .flash-error { background: rgba(200,16,46,0.08); border: 1px solid rgba(200,16,46,0.25); color: var(--red); }
+        .flash-success { background: var(--green-soft); border: 1px solid rgba(74,222,128,0.3); color: var(--green); }
+        .flash-error { background: var(--red-soft); border: 1px solid rgba(200,16,46,0.3); color: var(--red); }
 
         .controls-row {
             display: flex;
@@ -122,13 +132,15 @@
             font-family: var(--font);
             font-size: 14px;
             padding: 9px 14px;
-            border: 1px solid var(--line);
+            border: 1px solid var(--border);
             border-radius: 100px;
-            background: var(--surface);
+            background: var(--card);
+            color: var(--white);
             outline: none;
             transition: border-color 0.15s;
         }
-        .search-box input:focus { border-color: var(--blue); }
+        .search-box input::placeholder { color: var(--silver-dim); }
+        .search-box input:focus { border-color: var(--red); }
 
         .filters {
             display: flex;
@@ -137,7 +149,7 @@
         }
         .filters a {
             text-decoration: none;
-            color: var(--ink-soft);
+            color: var(--silver-dim);
             font-size: 13px;
             font-weight: 500;
             padding: 6px 14px;
@@ -145,16 +157,16 @@
             transition: background 0.15s, color 0.15s;
             white-space: nowrap;
         }
-        .filters a:hover { background: rgba(0,0,0,0.04); }
+        .filters a:hover { background: var(--card2); color: var(--white); }
         .filters a.active {
-            background: var(--ink);
-            color: var(--surface);
+            background: var(--red);
+            color: var(--white);
         }
 
         .card-list {
-            background: var(--surface);
+            background: var(--card);
             border-radius: var(--radius);
-            border: 1px solid var(--line);
+            border: 1px solid var(--border);
             overflow: hidden;
         }
         .user-row {
@@ -163,12 +175,12 @@
             gap: 16px;
             padding: 14px 20px;
             text-decoration: none;
-            color: var(--ink);
-            border-bottom: 1px solid var(--line);
+            color: var(--white);
+            border-bottom: 1px solid var(--border);
             transition: background 0.12s;
         }
         .card-list .user-row:last-child { border-bottom: none; }
-        .user-row:hover { background: rgba(0,0,0,0.015); }
+        .user-row:hover { background: var(--card2); }
 
         .user-avatar {
             width: 36px;
@@ -198,20 +210,21 @@
         .row-name {
             font-weight: 600;
             font-size: 14.5px;
+            color: var(--white);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .row-email {
             font-size: 12.5px;
-            color: var(--ink-faint);
+            color: var(--silver-dim);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .row-phone {
             font-size: 13px;
-            color: var(--ink-soft);
+            color: var(--text);
             min-width: 120px;
             display: none;
         }
@@ -227,10 +240,10 @@
             flex-shrink: 0;
         }
         .role-pill.owner { background: var(--red-soft); color: var(--red); }
-        .role-pill.staff { background: rgba(0,113,227,0.1); color: var(--blue); }
-        .role-pill.customer { background: rgba(0,0,0,0.05); color: var(--ink-soft); }
+        .role-pill.staff { background: var(--blue-soft); color: var(--blue); }
+        .role-pill.customer { background: var(--card2); color: var(--silver-dim); }
         .chevron {
-            color: var(--ink-faint);
+            color: var(--silver-dim);
             flex-shrink: 0;
         }
 
@@ -239,12 +252,12 @@
         }
 
         .empty {
-            background: var(--surface);
-            border: 1px solid var(--line);
+            background: var(--card);
+            border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: 64px 24px;
             text-align: center;
-            color: var(--ink-soft);
+            color: var(--silver-dim);
             font-size: 14px;
         }
 
@@ -252,19 +265,64 @@
             outline: 2px solid var(--blue);
             outline-offset: 2px;
         }
+
+        /* ── MOBILE ──
+           Same pattern as bookings.ejs: drop the topbar spacer, hide
+           the date, let the title truncate instead of wrapping, and
+           stack the search box and filter pills so they don't crowd
+           on a phone-width screen. */
+        @media (max-width: 480px) {
+            .topbar {
+                padding: 0 16px;
+            }
+
+            .topbar-spacer {
+                display: none;
+            }
+
+            .topbar-center {
+                flex: 1;
+                justify-content: flex-end;
+                overflow: hidden;
+            }
+
+            .topbar-title {
+                font-size: 15px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .topbar-meta {
+                display: none;
+            }
+
+            .shell {
+                padding: 24px 16px 80px;
+            }
+
+            .controls-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                max-width: none;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="topbar">
-        <a href="/admin" class="topbar-back">
+        <a href="/admin/site" class="topbar-back">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-            Dashboard
+            Site
         </a>
-        <div style="display:flex; align-items:baseline; gap:12px;">
+        <div class="topbar-center">
             <div class="topbar-title">Triangle Auto Works — Admin</div>
             <div class="topbar-meta"><%= new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) %></div>
         </div>
-        <div style="width:90px"></div>
+        <div class="topbar-spacer"></div>
     </div>
 
     <div class="shell">

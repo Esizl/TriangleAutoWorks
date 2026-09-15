@@ -9,23 +9,29 @@
     </title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #FAFAFA;
-            --surface: #FFFFFF;
-            --ink: #1D1D1F;
-            --ink-soft: #6E6E73;
-            --ink-faint: #AEAEB2;
-            --line: rgba(0, 0, 0, 0.07);
+            --black: #0A0A0A;
+            --card: #141414;
+            --card2: #1C1C1C;
             --red: #C8102E;
-            --red-soft: rgba(200, 16, 46, 0.08);
+            --red-dark: #9E0C24;
+            --red-soft: rgba(200, 16, 46, 0.12);
+            --silver: #C0C0C0;
+            --silver-dim: #7A7A7A;
+            --white: #F5F5F5;
+            --text: #CCCCCC;
+            --border: rgba(255, 255, 255, 0.07);
             --amber: #E8B339;
-            --blue: #0071E3;
-            --green: #1E8E5A;
-            --gray: #98989D;
-            --radius: 14px;
-            --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+            --amber-soft: rgba(232, 179, 57, 0.12);
+            --blue: #4F9DFF;
+            --blue-soft: rgba(79, 157, 255, 0.12);
+            --green: #4ADE80;
+            --green-soft: rgba(74, 222, 128, 0.12);
+            --radius: 4px;
+            --font-display: 'Bebas Neue', sans-serif;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
 
         * {
@@ -39,20 +45,20 @@
         }
 
         body {
-            background: var(--bg);
-            color: var(--ink);
+            background: var(--black);
+            color: var(--white);
             font-family: var(--font);
             font-size: 15px;
-            line-height: 1.45;
+            line-height: 1.5;
         }
 
         .topbar {
             position: sticky;
             top: 0;
             z-index: 10;
-            background: rgba(250, 250, 250, 0.85);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--line);
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(200, 16, 46, 0.25);
             padding: 0 32px;
             height: 60px;
             display: flex;
@@ -61,21 +67,17 @@
         }
 
         .topbar-title {
-            font-size: 17px;
-            font-weight: 600;
-            letter-spacing: -0.01em;
-        }
-
-        .topbar-meta {
-            font-size: 13px;
-            color: var(--ink-soft);
+            font-family: var(--font-display);
+            font-size: 19px;
+            letter-spacing: 0.03em;
+            color: var(--white);
         }
 
         .topbar-back {
             display: flex;
             align-items: center;
             gap: 6px;
-            color: var(--ink-soft);
+            color: var(--silver-dim);
             text-decoration: none;
             font-size: 13px;
             font-weight: 600;
@@ -83,7 +85,7 @@
         }
 
         .topbar-back:hover {
-            color: var(--ink);
+            color: var(--white);
         }
 
         .topbar-back svg {
@@ -92,17 +94,20 @@
             stroke: currentColor;
         }
 
+        .topbar-center { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+        .topbar-spacer { width: 90px; flex-shrink: 0; }
+
         .shell {
             max-width: 680px;
             margin: 0 auto;
-            padding: 40px 32px 100px;
+            padding: 44px 32px 120px;
         }
 
         .identity-header {
             display: flex;
             align-items: center;
             gap: 16px;
-            margin-bottom: 28px;
+            margin-bottom: 32px;
         }
 
         .user-avatar-lg {
@@ -120,25 +125,29 @@
         }
 
         .identity-name {
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: -0.02em;
+            font-family: var(--font-display);
+            font-size: 28px;
+            letter-spacing: 0.02em;
+            color: var(--white);
             margin-bottom: 3px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .identity-meta {
             font-size: 13px;
-            color: var(--ink-soft);
+            color: var(--silver-dim);
         }
 
         .role-pill {
+            font-family: var(--font);
             font-size: 11.5px;
             font-weight: 700;
             letter-spacing: 0.04em;
             text-transform: uppercase;
             padding: 4px 10px;
             border-radius: 100px;
-            margin-left: 8px;
         }
 
         .role-pill.owner {
@@ -147,18 +156,18 @@
         }
 
         .role-pill.staff {
-            background: rgba(0, 113, 227, 0.1);
+            background: var(--blue-soft);
             color: var(--blue);
         }
 
         .role-pill.customer {
-            background: rgba(0, 0, 0, 0.05);
-            color: var(--ink-soft);
+            background: var(--card2);
+            color: var(--silver-dim);
         }
 
         .flash {
             padding: 13px 16px;
-            border-radius: 10px;
+            border-radius: var(--radius);
             font-size: 13.5px;
             margin-bottom: 20px;
             font-weight: 500;
@@ -166,34 +175,37 @@
         }
 
         .flash-success {
-            background: rgba(30, 142, 90, 0.08);
-            border: 1px solid rgba(30, 142, 90, 0.25);
+            background: var(--green-soft);
+            border: 1px solid rgba(74, 222, 128, 0.3);
             color: var(--green);
         }
 
         .flash-error {
-            background: rgba(200, 16, 46, 0.08);
-            border: 1px solid rgba(200, 16, 46, 0.25);
+            background: var(--red-soft);
+            border: 1px solid rgba(200, 16, 46, 0.3);
             color: var(--red);
         }
 
         .panel {
-            background: var(--surface);
-            border: 1px solid var(--line);
+            background: var(--card);
+            border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 28px;
+            padding: 24px;
             margin-bottom: 20px;
         }
 
         .panel-title {
-            font-size: 16px;
+            font-size: 11px;
             font-weight: 700;
-            margin-bottom: 4px;
+            color: var(--red);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: 6px;
         }
 
         .panel-sub {
             font-size: 13px;
-            color: var(--ink-soft);
+            color: var(--silver-dim);
             margin-bottom: 20px;
         }
 
@@ -212,7 +224,7 @@
         .field label {
             font-size: 12px;
             font-weight: 600;
-            color: var(--ink-soft);
+            color: var(--silver-dim);
         }
 
         .field input,
@@ -220,28 +232,29 @@
             font-family: var(--font);
             font-size: 14.5px;
             padding: 10px 13px;
-            border: 1px solid var(--line);
-            border-radius: 10px;
-            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--card2);
             outline: none;
             transition: border-color 0.15s;
-            color: var(--ink);
+            color: var(--white);
         }
 
         .field input:focus,
         .field select:focus {
-            border-color: var(--blue);
+            border-color: var(--red);
         }
 
         .field input:disabled,
         .field select:disabled {
-            color: var(--ink-faint);
+            color: var(--silver-dim);
             cursor: not-allowed;
+            opacity: 0.7;
         }
 
         .field-hint {
             font-size: 12px;
-            color: var(--ink-faint);
+            color: var(--silver-dim);
         }
 
         .btn {
@@ -252,44 +265,45 @@
             font-size: 13.5px;
             font-weight: 600;
             padding: 11px 22px;
-            border-radius: 10px;
+            border-radius: var(--radius);
             cursor: pointer;
             border: none;
             transition: opacity 0.15s, background 0.15s;
         }
 
         .btn-primary {
-            background: var(--ink);
-            color: var(--surface);
+            background: var(--red);
+            color: var(--white);
         }
 
         .btn-primary:hover {
-            opacity: 0.85;
+            background: var(--red-dark);
         }
 
         .btn-secondary {
-            background: var(--bg);
-            color: var(--ink);
-            border: 1px solid var(--line);
+            background: var(--card2);
+            color: var(--white);
+            border: 1px solid var(--border);
         }
 
         .btn-secondary:hover {
-            background: rgba(0, 0, 0, 0.03);
+            background: #262626;
         }
 
         .btn-danger {
             background: var(--red-soft);
             color: var(--red);
-            border: 1px solid rgba(200, 16, 46, 0.2);
+            border: 1px solid rgba(200, 16, 46, 0.3);
         }
 
         .btn-danger:hover {
-            background: rgba(200, 16, 46, 0.14);
+            background: rgba(200, 16, 46, 0.2);
         }
 
         .btn-danger:disabled,
-        .btn-secondary:disabled {
-            opacity: 0.45;
+        .btn-secondary:disabled,
+        .btn-primary:disabled {
+            opacity: 0.4;
             cursor: not-allowed;
         }
 
@@ -302,11 +316,64 @@
         }
 
         .danger-zone {
-            border-color: rgba(200, 16, 46, 0.18);
+            border-color: rgba(200, 16, 46, 0.25);
         }
 
         form.inline {
             display: inline;
+        }
+
+        a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+            outline: 2px solid var(--blue);
+            outline-offset: 2px;
+        }
+
+        /* ── MOBILE ──
+           Same pattern as bookings/booking-detail: drop the topbar
+           spacer and let the title shrink, plus give the panels and
+           identity header a bit more breathing room on narrow screens. */
+        @media (max-width: 480px) {
+            .topbar {
+                padding: 0 16px;
+            }
+
+            .topbar-spacer {
+                display: none;
+            }
+
+            .topbar-center {
+                flex: 1;
+                justify-content: flex-end;
+                overflow: hidden;
+            }
+
+            .topbar-title {
+                font-size: 15px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .shell {
+                padding: 24px 16px 80px;
+            }
+
+            .identity-header {
+                gap: 12px;
+            }
+
+            .identity-name {
+                font-size: 22px;
+                flex-wrap: wrap;
+            }
+
+            .panel {
+                padding: 18px;
+            }
+
+            .panel-row {
+                align-items: stretch;
+            }
         }
     </style>
 </head>
@@ -319,10 +386,10 @@
             </svg>
             Users
         </a>
-        <div style="display:flex; align-items:baseline; gap:12px;">
+        <div class="topbar-center">
             <div class="topbar-title">Triangle Auto Works — Admin</div>
         </div>
-        <div style="width:90px"></div>
+        <div class="topbar-spacer"></div>
     </div>
 
     <div class="shell">

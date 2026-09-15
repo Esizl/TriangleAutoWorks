@@ -16,6 +16,12 @@
  *  - Filter available oil brands by requested tier, whether the customer
  *    flagged the vehicle as high-mileage (75k+ miles), AND the vehicle's
  *    recommended viscosity — so only compatible oils are ever offered.
+ *  - Offer filter brands per vehicle via a live catalog lookup
+ *    (getAvailableFilterBrands), which respects each brand's
+ *    compatibleMakes restriction — so a manufacturer-specific brand
+ *    (Motorcraft, AC Delco, or any OEM-equivalent brand added in the
+ *    admin panel) only appears for vehicles it's actually compatible
+ *    with, with no special-casing needed for "OEM" as a concept.
  *  - Build the customer-facing estimate card (#selectedPartsList /
  *    #partsEstimateTotal).
  *  - Build a silent admin payload (vehicle specs, parts list, labor
@@ -82,6 +88,21 @@ function currentVehicle() {
 }
 
 /**
+ * Builds the filter-brand option list shared by all three filter pickers
+ * (oil filter, engine air filter, cabin air filter) for the current
+ * vehicle. Pulled live from the catalog via getAvailableFilterBrands(),
+ * which already respects each brand's compatibleMakes restriction — so
+ * a manufacturer-restricted brand (OEM-equivalent or otherwise, e.g.
+ * "AC Delco" restricted to GM makes) only shows up for vehicles it's
+ * actually compatible with.
+ */
+function getFilterBrandOptions(vehicle) {
+    return (typeof getAvailableFilterBrands === "function")
+        ? getAvailableFilterBrands(vehicle?.make)
+        : [];
+}
+
+/**
  * Per-service state shape stored in state.selectedParts[serviceDisplayName]:
  * Oil Change:  { oilBrand, filterBrand, engineFilterBrand, cabinFilterBrand, highMileage }
  *              engineFilterBrand/cabinFilterBrand are optional add-ons —
@@ -102,6 +123,7 @@ function buildConfiguratorHTML() {
     }
 
     const specs = resolveVehicleSpecs();
+    const vehicle = currentVehicle();
     let html = '';
 
     state.services.forEach(serviceName => {
@@ -187,6 +209,19 @@ function buildConfiguratorHTML() {
                 ? `<div class="config-promo-flag">Select Carquest as the filter brand to get it free with this 5qt.</div>`
                 : '';
 
+            // One live brand list, shared by all three filter pickers
+            // (compatibleMakes restricts by brand, not by filter type).
+            // Any previously-selected brand that's no longer in this list
+            // (e.g. the customer switched to a vehicle it isn't compatible
+            // with) is cleared here, before rendering, so a stale
+            // selection never lingers with invalid/mismatched pricing.
+            const filterBrandOptions = getFilterBrandOptions(vehicle);
+            ['filterBrand', 'engineFilterBrand', 'cabinFilterBrand'].forEach(key => {
+                if (current[key] && !filterBrandOptions.includes(current[key])) {
+                    delete current[key];
+                }
+            });
+
             html += `
                 <div class="service-config-card">
                     <h3>${serviceName}</h3>
@@ -222,7 +257,7 @@ function buildConfiguratorHTML() {
                         <label>Oil Filter Brand</label>
                         <select onchange="updatePartSelection('${serviceName}','filterBrand', this.value)">
                             <option value="">Select Filter Brand</option>
-                            ${def.options.filterBrand.map(o =>
+                            ${filterBrandOptions.map(o =>
                 `<option value="${o}" ${current.filterBrand === o ? 'selected' : ''}>${o}</option>`
             ).join('')}
                         </select>
@@ -232,7 +267,7 @@ function buildConfiguratorHTML() {
                         <label>Engine Air Filter <span class="field-optional">(optional)</span></label>
                         <select onchange="updatePartSelection('${serviceName}','engineFilterBrand', this.value)">
                             <option value="">Not needed this visit</option>
-                            ${def.options.filterBrand.map(o =>
+                            ${filterBrandOptions.map(o =>
                 `<option value="${o}" ${current.engineFilterBrand === o ? 'selected' : ''}>${o}</option>`
             ).join('')}
                         </select>
@@ -242,7 +277,7 @@ function buildConfiguratorHTML() {
                         <label>Cabin Air Filter <span class="field-optional">(optional)</span></label>
                         <select onchange="updatePartSelection('${serviceName}','cabinFilterBrand', this.value)">
                             <option value="">Not needed this visit</option>
-                            ${def.options.filterBrand.map(o =>
+                            ${filterBrandOptions.map(o =>
                 `<option value="${o}" ${current.cabinFilterBrand === o ? 'selected' : ''}>${o}</option>`
             ).join('')}
                         </select>
