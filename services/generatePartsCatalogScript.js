@@ -54,7 +54,7 @@ function renderOilProduct(p) {
 }
 
 function renderPriceOption(o) {
-    return `makePart({ price: ${jsLiteral(o.price)}, supplier: ${jsLiteral(o.supplier)} })`
+    return `makePart({ partNumber: ${jsLiteral(o.partNumber)}, price: ${jsLiteral(o.price)}, supplier: ${jsLiteral(o.supplier)} })`
 }
 
 function renderSuppliers(suppliers) {
@@ -80,7 +80,7 @@ function renderPadOrRotorMap(items) {
 }
 
 function renderTireServiceMap(tireServiceTypes) {
-    const entries = tireServiceTypes.map(t => `            ${jsLiteral(t.name)}: makePart({ price: ${jsLiteral(t.price)} })`)
+    const entries = tireServiceTypes.map(t => `            ${jsLiteral(t.name)}: makePart({ partNumber: ${jsLiteral(t.partNumber)}, price: ${jsLiteral(t.price)} })`)
     return `{\n${entries.join(',\n')}\n        }`
 }
 

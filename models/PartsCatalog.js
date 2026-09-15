@@ -33,6 +33,7 @@ const oilProductSchema = new mongoose.Schema({
 
 const filterBrandSchema = new mongoose.Schema({
     name: { type: String, required: true, trim: true },       // e.g. "Carquest", "AC Delco"
+    partNumber: { type: String, default: null },               // generic/default part number for this brand's oil filter — shown on tech sheets whenever a more specific per-vehicle Filter Overrides entry doesn't already supply one
     price: { type: Number, required: true, min: 0 },
     supplier: { type: String, default: null },
     // Empty array = universal / all makes (mirrors the original
@@ -58,15 +59,20 @@ const filterOverrideSchema = new mongoose.Schema({
 })
 
 // Shared shape for brake pad types and rotor options — both are just
-// named price points with an optional supplier.
+// named price points with an optional supplier and an optional generic
+// part number (shown on tech sheets; there's no per-vehicle override
+// mechanism for these like filters have, since pad/rotor part numbers
+// don't typically vary by vehicle the way filter part numbers do).
 const priceOptionSchema = new mongoose.Schema({
     name: { type: String, required: true, trim: true },
+    partNumber: { type: String, default: null },
     price: { type: Number, required: true, min: 0 },
     supplier: { type: String, default: null }
 })
 
 const tireServiceSchema = new mongoose.Schema({
     name: { type: String, required: true, trim: true },
+    partNumber: { type: String, default: null },
     price: { type: Number, required: true, min: 0, default: 0 }
 })
 

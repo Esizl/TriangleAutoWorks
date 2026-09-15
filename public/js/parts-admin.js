@@ -94,12 +94,14 @@
       label: 'Filter Brands',
       columns: [
         { key: 'name', label: 'Name' },
+        { key: 'partNumber', label: 'Part #', format: (v) => v || '—' },
         { key: 'price', label: 'Price', format: (v) => `$${Number(v).toFixed(2)}` },
         { key: 'supplier', label: 'Supplier' },
         { key: 'compatibleMakes', label: 'Restricted to', format: (v) => (v && v.length ? v.join(', ') : 'Universal') },
       ],
       fields: [
         { key: 'name', label: 'Brand Name', type: 'text', required: true },
+        { key: 'partNumber', label: 'Part Number', type: 'text', hint: 'Generic/default part number for this brand\'s filter. A vehicle-specific entry in Filter Overrides takes priority over this when one exists.' },
         { key: 'price', label: 'Price ($)', type: 'number', step: '0.01', required: true },
         { key: 'supplier', label: 'Supplier key', type: 'text' },
         { key: 'compatibleMakes', label: 'Compatible makes', type: 'text', listValue: true, hint: 'Comma-separated makes (e.g. Ford, Lincoln). Leave blank for universal / all makes.' },
@@ -134,11 +136,13 @@
       label: 'Brake Pads',
       columns: [
         { key: 'name', label: 'Name' },
+        { key: 'partNumber', label: 'Part #', format: (v) => v || '—' },
         { key: 'price', label: 'Price (per axle set)', format: (v) => `$${Number(v).toFixed(2)}` },
         { key: 'supplier', label: 'Supplier' },
       ],
       fields: [
         { key: 'name', label: 'Name', type: 'text', required: true },
+        { key: 'partNumber', label: 'Part Number', type: 'text' },
         { key: 'price', label: 'Price ($, per axle set)', type: 'number', step: '0.01', required: true },
         { key: 'supplier', label: 'Supplier key', type: 'text' },
       ],
@@ -147,11 +151,13 @@
       label: 'Rotors',
       columns: [
         { key: 'name', label: 'Name' },
+        { key: 'partNumber', label: 'Part #', format: (v) => v || '—' },
         { key: 'price', label: 'Price (per axle pair)', format: (v) => `$${Number(v).toFixed(2)}` },
         { key: 'supplier', label: 'Supplier' },
       ],
       fields: [
         { key: 'name', label: 'Name', type: 'text', required: true },
+        { key: 'partNumber', label: 'Part Number', type: 'text' },
         { key: 'price', label: 'Price ($, per axle pair)', type: 'number', step: '0.01', required: true },
         { key: 'supplier', label: 'Supplier key', type: 'text' },
       ],
@@ -160,10 +166,12 @@
       label: 'Tire Services',
       columns: [
         { key: 'name', label: 'Name' },
+        { key: 'partNumber', label: 'Part #', format: (v) => v || '—' },
         { key: 'price', label: 'Price', format: (v) => `$${Number(v).toFixed(2)}` },
       ],
       fields: [
         { key: 'name', label: 'Name', type: 'text', required: true },
+        { key: 'partNumber', label: 'Part Number', type: 'text' },
         { key: 'price', label: 'Price ($)', type: 'number', step: '0.01', required: true },
       ],
     },
