@@ -45,6 +45,11 @@ const UserSchema = new mongoose.Schema({
         type: [PasskeySchema],
         default: []
     },
+    // Forgot-password (routes/password.js). Only a SHA-256 hash of the
+    // emailed token is stored, and it is cleared once used.
+    resetTokenHash: { type: String, default: null },
+    resetTokenExpires: { type: Date, default: null },
+    resetRequestedAt: { type: Date, default: null }, // throttles repeat reset emails
     date: {
         type: Date,
         default: estDate.toLocaleString("en-US", { timeZone: "America/New_York" })

@@ -1,8 +1,13 @@
 {
-  "server": {
+  "email": {
+        "resendApiKey": "re_CnhWf7pQ_CCc8Gi3fceTrFzRpVraetX4p",
+        "from": "Triangle Auto Works <no-reply@triangleautowork.com>",
+        "appUrl": "http://localhost:8080"
+    },
+    "server": {
     "mongoUri": "mongodb+srv://Esizl:jp0qcs1735VQTSGY@cluster0.8oucz.mongodb.net/infinitum?retryWrites=true&w=majority&appName=triangleautoworks",
     "port": 8080,
-    "version": "0.1.15"
+    "version": "0.1.151"
   },
   "webauthn": {
     "rpID": "triangleautowork.com",
