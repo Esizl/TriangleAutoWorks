@@ -402,10 +402,19 @@
                     <span class="field-key">Requested</span>
                     <span class="field-val"><%= (booking.services || []).join(', ') %></span>
                 </div>
+                <% if (booking.discount && booking.discount.code) { %>
+                <div class="field-row">
+                    <span class="field-key">Discount code</span>
+                    <span class="field-val">
+                        <%= booking.discount.code %> — <%= booking.discount.label %><%= booking.discount.amount == null ? ' (take off the quote)' : '' %>
+                    </span>
+                </div>
+                <% } %>
             </div>
         </div>
 
-        <% if (booking.category === 'Automotive' && booking.pricing) { %>
+        <% const hasTechSheet = ['Automotive', 'Detailing'].includes(booking.category) && booking.pricing && booking.pricing.total != null; %>
+        <% if (hasTechSheet) { %>
         <div class="section">
             <div class="section-title">Tech sheet</div>
             <div class="tech-sheet">
@@ -417,6 +426,18 @@
                         </div>
                     <% } %>
                 <% }) %>
+                <% if (booking.category === 'Detailing') { %>
+                    <% Object.entries(booking.serviceNotes || {}).forEach(([svc, answers]) => { %>
+                        <% Object.entries(answers || {}).forEach(([question, answer]) => { %>
+                            <div class="mileage-flag">
+                                <%= svc === '_detailing' ? '' : svc + ' — ' %><%= question %>: <%= answer %>
+                            </div>
+                        <% }) %>
+                    <% }) %>
+                    <% if (booking.pricing.estimatedHours) { %>
+                        <div class="mileage-flag">Estimated time on site: <%= booking.pricing.estimatedHours %> hrs</div>
+                    <% } %>
+                <% } %>
                 <% (booking.parts || []).forEach(p => { %>
                     <div class="tech-line">
                         <span class="tech-line-label">
@@ -430,12 +451,27 @@
                 <% (booking.labor || []).forEach(l => { %>
                     <div class="tech-line">
                         <span class="tech-line-label"><%= l.label %></span>
-                        <span class="tech-line-price">$<%= l.cost.toFixed(2) %></span>
+                        <span class="tech-line-price"><%= l.isQuote ? 'Quote on site' : (l.isFromPrice ? 'From $' : '$') + l.cost.toFixed(2) %></span>
                     </div>
                 <% }) %>
+                <% if (booking.pricing.discount > 0) { %>
+                    <div class="tech-divider"></div>
+                    <div class="tech-line">
+                        <span class="tech-line-label">Subtotal</span>
+                        <span class="tech-line-price">$<%= booking.pricing.subtotal.toFixed(2) %></span>
+                    </div>
+                    <div class="tech-line">
+                        <span class="tech-line-label">Discount (<%= booking.discount?.code %>)</span>
+                        <span class="tech-line-price">−$<%= booking.pricing.discount.toFixed(2) %></span>
+                    </div>
+                    <div class="tech-line">
+                        <span class="tech-line-label">Tax</span>
+                        <span class="tech-line-price">$<%= (booking.pricing.tax || 0).toFixed(2) %></span>
+                    </div>
+                <% } %>
                 <div class="tech-total">
-                    <span>Total</span>
-                    <span>$<%= booking.pricing.total.toFixed(2) %></span>
+                    <span>Total<%= booking.flags?.hasQuoteItems ? ' (excl. quotes)' : '' %></span>
+                    <span><%= booking.flags?.isStartingPrice || booking.flags?.hasQuoteItems ? 'From ' : '' %>$<%= booking.pricing.total.toFixed(2) %></span>
                 </div>
 
                 <% if (booking.toolsNeeded && booking.toolsNeeded.length) { %>

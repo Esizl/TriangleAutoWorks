@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order History — Triangle Auto Works</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --black: #0A0A0A;
+            --card: #141414;
+            --card2: #1C1C1C;
+            --red: #C8102E;
+            --red-dark: #9E0C24;
+            --silver: #C0C0C0;
+            --silver-dim: #7A7A7A;
+            --white: #F5F5F5;
+            --text: #CCCCCC;
+            --border: rgba(255, 255, 255, 0.07);
+            --green: #4ADE80;
+            --amber: #E8B339;
+            --font-display: 'Bebas Neue', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+        body {
+            background: var(--black);
+            color: var(--white);
+            font-family: var(--font-body);
+            font-size: 16px;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            height: 64px;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(200, 16, 46, 0.25);
+        }
+        .nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+        .nav-wordmark { font-family: var(--font-display); font-size: 22px; letter-spacing: 0.06em; color: var(--white); line-height: 1; }
+        .nav-wordmark span { color: var(--red); display: block; font-size: 11px; letter-spacing: 0.25em; font-family: var(--font-body); font-weight: 500; margin-top: 1px; }
+        .nav-back {
+            display: flex; align-items: center; gap: 8px;
+            color: var(--silver-dim); text-decoration: none;
+            font-size: 13px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+            transition: color 0.2s;
+        }
+        .nav-back:hover { color: var(--white); }
+        .nav-back svg { width: 16px; height: 16px; stroke: currentColor; }
+
+        .shell { max-width: 720px; margin: 0 auto; padding: 140px 24px 100px; }
+        .page-eyebrow {
+            font-size: 11px; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase;
+            color: var(--red); margin-bottom: 10px;
+        }
+        .page-title {
+            font-family: var(--font-display);
+            font-size: clamp(36px, 4vw, 52px);
+            letter-spacing: 0.03em; line-height: 0.95;
+            color: var(--white); margin-bottom: 16px;
+        }
+        .red-rule { width: 48px; height: 3px; background: var(--red); margin-bottom: 40px; }
+
+        .flash { padding: 14px 16px; border-radius: 2px; font-size: 13.5px; margin-bottom: 24px; }
+        .flash-success { background: rgba(74, 222, 128, 0.1); border: 1px solid rgba(74, 222, 128, 0.3); color: var(--green); }
+        .flash-error { background: rgba(232, 57, 77, 0.1); border: 1px solid rgba(232, 57, 77, 0.3); color: #E8394D; }
+
+        .empty {
+            color: var(--silver-dim); font-size: 14px; text-align: center;
+            padding: 40px 24px; border: 1px dashed var(--border); border-radius: 2px;
+        }
+        .empty a { color: var(--red); }
+
+        .order { background: var(--card); border: 1px solid var(--border); border-radius: 2px; margin-bottom: 16px; }
+        .order-head {
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+            padding: 22px 24px 18px;
+        }
+        .order-title { font-size: 16px; font-weight: 600; color: var(--white); overflow-wrap: anywhere; }
+        .order-meta { font-size: 13px; color: var(--silver-dim); margin-top: 3px; }
+        .pill {
+            flex-shrink: 0;
+            font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+            padding: 4px 10px; border-radius: 100px; white-space: nowrap;
+            background: rgba(255, 255, 255, 0.06); color: var(--silver); border: 1px solid var(--border);
+        }
+        .pill.is-confirmed { background: rgba(79, 157, 255, 0.12); color: #4F9DFF; border-color: rgba(79, 157, 255, 0.3); }
+        .pill.is-completed { background: rgba(74, 222, 128, 0.1); color: var(--green); border-color: rgba(74, 222, 128, 0.3); }
+        .pill.is-cancelled { background: rgba(200, 16, 46, 0.12); color: var(--red); border-color: rgba(200, 16, 46, 0.3); }
+
+        .order-rows { padding: 0 24px 18px; }
+        .order-row {
+            display: flex; justify-content: space-between; gap: 16px;
+            font-size: 13.5px; padding: 7px 0; border-top: 1px solid var(--border);
+        }
+        .order-row-key { color: var(--silver-dim); flex-shrink: 0; }
+        .order-row-val { color: var(--text); text-align: right; overflow-wrap: anywhere; }
+        .order-row-val.total { color: var(--white); font-weight: 600; }
+
+        .review-box { border-top: 1px solid var(--border); padding: 20px 24px 22px; background: var(--card2); }
+        .review-label {
+            font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+            color: var(--silver-dim); margin-bottom: 10px;
+        }
+        .stars { color: var(--amber); font-size: 18px; letter-spacing: 2px; }
+        .stars .off { color: rgba(255, 255, 255, 0.15); }
+        .review-text { font-size: 14px; color: var(--text); margin-top: 8px; white-space: pre-line; overflow-wrap: anywhere; }
+        .review-status { font-size: 12.5px; color: var(--silver-dim); margin-top: 10px; }
+
+        /* Star picker: radios laid out right-to-left so "this star and every
+           star before it" can be lit with the ~ sibling selector, no JS. */
+        .star-picker { display: inline-flex; flex-direction: row-reverse; gap: 4px; border: none; }
+        .star-picker input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+        .star-picker label {
+            font-size: 30px; line-height: 1; cursor: pointer;
+            color: rgba(255, 255, 255, 0.15); transition: color 0.12s;
+        }
+        .star-picker label:hover,
+        .star-picker label:hover ~ label,
+        .star-picker input:checked ~ label { color: var(--amber); }
+        .star-picker input:focus-visible + label { outline: 2px solid var(--red); outline-offset: 3px; }
+
+        .review-form textarea {
+            display: block; width: 100%; min-height: 96px; resize: vertical; margin: 14px 0;
+            background: var(--card); border: 1px solid var(--border); border-radius: 2px;
+            color: var(--white); font-family: var(--font-body); font-size: 15px;
+            padding: 13px 15px; outline: none; transition: border-color 0.2s;
+        }
+        .review-form textarea:focus { border-color: rgba(200, 16, 46, 0.5); }
+        .btn-primary {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: var(--red); color: var(--white); border: none;
+            font-family: var(--font-body); font-size: 13px; font-weight: 600;
+            letter-spacing: 0.12em; text-transform: uppercase;
+            padding: 13px 26px; border-radius: 2px; cursor: pointer; transition: background 0.2s;
+        }
+        .btn-primary:hover { background: var(--red-dark); }
+
+        @media (max-width: 640px) {
+            nav { padding: 0 20px; }
+            .shell { padding: 110px 16px 60px; }
+            .order-head { flex-direction: column; gap: 10px; }
+            .order-head, .order-rows, .review-box { padding-left: 18px; padding-right: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="nav-logo">
+            <svg width="36" height="36" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="20,2 38,36 2,36" fill="none" stroke="#C8102E" stroke-width="2.5" />
+                <text x="20" y="32" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="18" fill="#C0C0C0">TA</text>
+            </svg>
+            <div class="nav-wordmark">Triangle<span>Auto Works</span></div>
+        </a>
+        <a href="/settings" class="nav-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Account
+        </a>
+    </nav>
+
+    <%
+        const STATUS_LABELS = {
+            new: 'Request received',
+            contacted: 'In contact',
+            confirmed: 'Confirmed',
+            completed: 'Completed',
+            cancelled: 'Cancelled'
+        };
+        const REVIEW_STATUS_NOTES = {
+            pending: 'Thanks! Your review is waiting for approval before it shows on the site.',
+            approved: 'Published on the site.',
+            hidden: 'This review is not shown on the site.'
+        };
+        function formatDate(ymd) {
+            const d = new Date(ymd + 'T12:00:00');
+            return isNaN(d) ? ymd : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        }
+    %>
+
+    <div class="shell">
+        <div class="page-eyebrow">Account</div>
+        <h1 class="page-title">Order History</h1>
+        <div class="red-rule"></div>
+
+        <% if (typeof successMessage !== 'undefined' && successMessage && successMessage.length) { %>
+            <% successMessage.forEach(function(msg) { %>
+                <div class="flash flash-success"><%= msg %></div>
+            <% }) %>
+        <% } %>
+        <% if (typeof errorMessage !== 'undefined' && errorMessage && errorMessage.length) { %>
+            <% errorMessage.forEach(function(msg) { %>
+                <div class="flash flash-error"><%= msg %></div>
+            <% }) %>
+        <% } %>
+
+        <% if (bookings.length === 0) { %>
+            <div class="empty">
+                No bookings on this account yet. Bookings made while you're logged in show up here.<br>
+                <a href="/booking">Book a service</a>
+            </div>
+        <% } %>
+
+        <% bookings.forEach(function(b) { %>
+            <%
+                const review = reviewByBooking[String(b._id)];
+                const vehicleName = [b.vehicle && b.vehicle.year, b.vehicle && b.vehicle.make, b.vehicle && b.vehicle.model].filter(Boolean).join(' ');
+                const hasTotal = b.pricing && b.pricing.total != null;
+                const isOpenTotal = b.flags && (b.flags.isStartingPrice || b.flags.hasQuoteItems);
+            %>
+            <div class="order">
+                <div class="order-head">
+                    <div>
+                        <div class="order-title"><%= (b.services || []).join(', ') %></div>
+                        <div class="order-meta"><%= b.category %><%= vehicleName ? ' · ' + vehicleName : '' %></div>
+                    </div>
+                    <span class="pill is-<%= b.status %>"><%= STATUS_LABELS[b.status] || b.status %></span>
+                </div>
+                <div class="order-rows">
+                    <div class="order-row">
+                        <span class="order-row-key">Appointment</span>
+                        <span class="order-row-val"><%= formatDate(b.preferredDate) %> · <%= b.preferredTime %></span>
+                    </div>
+                    <div class="order-row">
+                        <span class="order-row-key">Location</span>
+                        <span class="order-row-val"><%= b.serviceAddress %></span>
+                    </div>
+                    <% if (b.discount && b.discount.code) { %>
+                        <div class="order-row">
+                            <span class="order-row-key">Discount</span>
+                            <span class="order-row-val"><%= b.discount.code %> — <%= b.discount.label %></span>
+                        </div>
+                    <% } %>
+                    <div class="order-row">
+                        <span class="order-row-key">Estimate</span>
+                        <span class="order-row-val total">
+                            <% if (hasTotal) { %>
+                                <%= isOpenTotal ? 'From ' : '' %>$<%= b.pricing.total.toFixed(2) %>
+                            <% } else { %>
+                                Quoted directly
+                            <% } %>
+                        </span>
+                    </div>
+                </div>
+
+                <% if (review) { %>
+                    <div class="review-box">
+                        <div class="review-label">Your review</div>
+                        <div class="stars" role="img" aria-label="<%= review.rating %> out of 5 stars"><% for (let i = 1; i <= 5; i++) { %><span class="<%= i <= review.rating ? '' : 'off' %>">★</span><% } %></div>
+                        <% if (review.text) { %><div class="review-text"><%= review.text %></div><% } %>
+                        <div class="review-status"><%= REVIEW_STATUS_NOTES[review.status] %></div>
+                    </div>
+                <% } else if (b.status === 'completed') { %>
+                    <div class="review-box">
+                        <div class="review-label">How did we do?</div>
+                        <form method="POST" action="/account/orders/<%= b._id %>/review" class="review-form">
+                            <fieldset class="star-picker">
+                                <legend style="position:absolute;opacity:0">Star rating</legend>
+                                <% for (let i = 5; i >= 1; i--) { %>
+                                    <input type="radio" name="rating" id="star-<%= b._id %>-<%= i %>" value="<%= i %>" required>
+                                    <label for="star-<%= b._id %>-<%= i %>" title="<%= i %> star<%= i === 1 ? '' : 's' %>" aria-label="<%= i %> star<%= i === 1 ? '' : 's' %>">★</label>
+                                <% } %>
+                            </fieldset>
+                            <textarea name="text" maxlength="<%= maxReviewLength %>" placeholder="Tell us about the service (optional)" aria-label="Your review"></textarea>
+                            <button type="submit" class="btn-primary">Submit Review</button>
+                        </form>
+                    </div>
+                <% } %>
+            </div>
+        <% }) %>
+    </div>
+</body>
+</html>

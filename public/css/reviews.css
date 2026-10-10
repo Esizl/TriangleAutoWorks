@@ -1,0 +1,79 @@
+/* ── REVIEWS (home page) ── uses the variables defined in index.css */
+.reviews {
+    background: var(--black);
+}
+
+.reviews .section-title {
+    margin-bottom: 24px;
+}
+
+.reviews-summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    margin-bottom: 40px;
+}
+
+.reviews-average {
+    font-family: var(--font-display);
+    font-size: 44px;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    color: var(--white);
+}
+
+.review-stars {
+    color: #E8B339;
+    font-size: 18px;
+    letter-spacing: 3px;
+    white-space: nowrap;
+}
+
+.review-stars .off {
+    color: rgba(255, 255, 255, 0.15);
+}
+
+.reviews-count {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--silver-dim);
+}
+
+.reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2px;
+}
+
+.review-card {
+    background: var(--card);
+    padding: 32px 30px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.review-card-text {
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text);
+    margin: 16px 0 24px;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+    flex: 1;
+}
+
+.review-card-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--white);
+}
+
+.review-card-meta {
+    font-size: 12px;
+    color: var(--silver-dim);
+    margin-top: 2px;
+}

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discount Codes — Triangle Auto Works</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --black: #0A0A0A;
+            --card: #141414;
+            --card2: #1C1C1C;
+            --red: #C8102E;
+            --red-dark: #9E0C24;
+            --red-soft: rgba(200, 16, 46, 0.12);
+            --silver: #C0C0C0;
+            --silver-dim: #7A7A7A;
+            --white: #F5F5F5;
+            --text: #CCCCCC;
+            --border: rgba(255, 255, 255, 0.07);
+            --blue: #4F9DFF;
+            --green: #4ADE80;
+            --radius: 4px;
+            --font-display: 'Bebas Neue', sans-serif;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { -webkit-font-smoothing: antialiased; }
+        body {
+            background: var(--black);
+            color: var(--white);
+            font-family: var(--font);
+            font-size: 15px;
+            line-height: 1.45;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(200, 16, 46, 0.25);
+            padding: 0 32px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .topbar-title { font-family: var(--font-display); font-size: 19px; letter-spacing: 0.03em; color: var(--white); }
+        .topbar-back {
+            display: flex; align-items: center; gap: 6px;
+            color: var(--silver-dim); text-decoration: none;
+            font-size: 13px; font-weight: 600; transition: color 0.15s;
+        }
+        .topbar-back:hover { color: var(--white); }
+        .topbar-back svg { width: 13px; height: 13px; stroke: currentColor; }
+        .topbar-center { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+        .topbar-spacer { width: 90px; flex-shrink: 0; }
+
+        .shell {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 44px 32px 120px;
+        }
+
+        .page-heading h1 {
+            font-family: var(--font-display);
+            font-size: 34px;
+            letter-spacing: 0.03em;
+            color: var(--white);
+            margin-bottom: 6px;
+        }
+        .page-sub {
+            font-size: 13.5px;
+            color: var(--silver-dim);
+            margin-bottom: 28px;
+        }
+
+        .flash {
+            padding: 13px 16px;
+            border-radius: var(--radius);
+            font-size: 13.5px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        .flash-success { background: rgba(74,222,128,0.12); border: 1px solid rgba(74,222,128,0.3); color: var(--green); }
+        .flash-error { background: var(--red-soft); border: 1px solid rgba(200,16,46,0.3); color: var(--red); }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 28px;
+        }
+        .section-title {
+            font-size: 11px; font-weight: 700; letter-spacing: 0.18em;
+            text-transform: uppercase; color: var(--silver-dim); margin-bottom: 12px;
+        }
+
+        .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px 20px; }
+        .form-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+        .form-field.wide { grid-column: 1 / -1; }
+        .form-field > label, .form-label {
+            font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
+            text-transform: uppercase; color: var(--silver-dim);
+        }
+        .form-hint { font-size: 12px; color: var(--silver-dim); line-height: 1.45; }
+        .form-field input[type="text"], .form-field input[type="number"],
+        .form-field input[type="date"], .form-field select {
+            font-family: var(--font); font-size: 14px; font-weight: 500;
+            padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius);
+            background: var(--card2); color: var(--white); outline: none; width: 100%;
+            color-scheme: dark;
+        }
+        .form-field input:focus, .form-field select:focus { border-color: var(--red); }
+        .code-row { display: flex; gap: 8px; }
+        .code-row input { text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+        .value-row { display: flex; gap: 8px; }
+        .value-row select { flex: 1.4; }
+        .value-row input { flex: 1; }
+        .check-row { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+        .check {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-size: 13.5px; font-weight: 500; color: var(--text); cursor: pointer;
+        }
+        .check input { width: 15px; height: 15px; accent-color: var(--red); }
+        .form-field > label.check { font-size: 13.5px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text); }
+        .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+
+        .btn-primary, .btn-ghost, .btn-danger {
+            font-family: var(--font); font-size: 13px; font-weight: 600;
+            padding: 9px 16px; border-radius: var(--radius); cursor: pointer; white-space: nowrap;
+        }
+        .btn-primary { border: none; background: var(--red); color: var(--white); }
+        .btn-primary:hover { background: var(--red-dark); }
+        .btn-ghost { border: 1px solid var(--border); background: transparent; color: var(--text); }
+        .btn-ghost:hover { border-color: var(--silver-dim); color: var(--white); }
+        .btn-danger { border: 1px solid rgba(200,16,46,0.4); background: transparent; color: var(--red); }
+        .btn-danger:hover { background: var(--red-soft); }
+
+        .code-item {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: var(--radius); margin-bottom: 10px;
+        }
+        .code-item > summary {
+            list-style: none; cursor: pointer; padding: 16px 20px;
+            display: flex; align-items: center; gap: 16px;
+        }
+        .code-item > summary::-webkit-details-marker { display: none; }
+        .code-item[open] > summary { border-bottom: 1px solid var(--border); }
+        .code-main { flex: 1; min-width: 0; }
+        .code-name { font-weight: 700; font-size: 15px; letter-spacing: 0.08em; color: var(--white); overflow-wrap: anywhere; }
+        .code-meta { font-size: 12.5px; color: var(--silver-dim); margin-top: 3px; line-height: 1.5; }
+        .code-worth { font-weight: 700; font-size: 14px; color: var(--white); white-space: nowrap; }
+        .code-uses { font-size: 12.5px; color: var(--silver-dim); white-space: nowrap; font-variant-numeric: tabular-nums; }
+        .pill {
+            font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+            padding: 4px 9px; border-radius: 999px; white-space: nowrap;
+            background: rgba(255,255,255,0.06); color: var(--silver-dim);
+        }
+        .pill.is-active { background: rgba(74,222,128,0.12); color: var(--green); }
+        .pill.is-scheduled { background: rgba(79,157,255,0.12); color: var(--blue); }
+        .pill.is-expired, .pill.is-used-up { background: var(--red-soft); color: var(--red); }
+        .code-body { padding: 20px; }
+        .code-body-actions {
+            display: flex; justify-content: space-between; gap: 10px;
+            margin-top: 20px; flex-wrap: wrap;
+        }
+        .code-body-actions form { display: inline; }
+        .empty { font-size: 13.5px; color: var(--silver-dim); padding: 8px 0 24px; }
+
+        @media (max-width: 640px) {
+            .topbar { padding: 0 16px; }
+            .topbar-spacer { display: none; }
+            .shell { padding: 24px 16px 80px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .code-item > summary { flex-wrap: wrap; gap: 8px 14px; }
+            .code-main { flex-basis: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <a href="/admin/site" class="topbar-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Site
+        </a>
+        <div class="topbar-center">
+            <div class="topbar-title">Triangle Auto Works — Admin</div>
+        </div>
+        <div class="topbar-spacer"></div>
+    </div>
+
+    <%
+    // One form body shared by "create" and every "edit" row, so the two
+    // can't drift apart. `c` is a DiscountCode doc, or null for create.
+    // `idPrefix` keeps label/input ids unique across the page.
+    function discountFields(c, idPrefix) {
+        const picked = c ? c.categories : [];
+    %>
+        <div class="form-grid">
+            <div class="form-field">
+                <label for="<%= idPrefix %>-code">Code</label>
+                <div class="code-row">
+                    <input type="text" id="<%= idPrefix %>-code" name="code" value="<%= c ? c.code : '' %>"
+                        maxlength="24" pattern="[A-Za-z0-9\-]{3,24}" autocomplete="off" spellcheck="false" required>
+                    <% if (!c) { %><button type="button" class="btn-ghost" data-generate-code="<%= idPrefix %>-code">Generate</button><% } %>
+                </div>
+                <div class="form-hint">What the customer types. Letters, numbers and dashes.</div>
+            </div>
+
+            <div class="form-field">
+                <label for="<%= idPrefix %>-value">Discount</label>
+                <div class="value-row">
+                    <select name="type" aria-label="Discount type">
+                        <option value="percent" <%= !c || c.type === 'percent' ? 'selected' : '' %>>Percent off (%)</option>
+                        <option value="fixed" <%= c && c.type === 'fixed' ? 'selected' : '' %>>Dollars off ($)</option>
+                    </select>
+                    <input type="number" id="<%= idPrefix %>-value" name="value" value="<%= c ? c.value : '' %>" min="0.01" step="0.01" required>
+                </div>
+                <div class="form-hint">Taken off the pre-tax subtotal of the whole booking.</div>
+            </div>
+
+            <div class="form-field wide">
+                <label for="<%= idPrefix %>-description">Internal note <span style="text-transform:none;letter-spacing:0;font-weight:500">(optional)</span></label>
+                <input type="text" id="<%= idPrefix %>-description" name="description" value="<%= c ? c.description : '' %>" maxlength="120">
+                <div class="form-hint">Only you see this — e.g. "Fall flyer" or "Advance coworkers".</div>
+            </div>
+
+            <div class="form-field wide">
+                <span class="form-label">Works on</span>
+                <div class="check-row">
+                    <% categories.forEach(function (cat) { %>
+                        <label class="check">
+                            <input type="checkbox" name="categories" value="<%= cat %>" <%= picked.includes(cat) ? 'checked' : '' %>>
+                            <%= cat %>
+                        </label>
+                    <% }) %>
+                </div>
+                <div class="form-hint">Leave all unticked to allow every service category.</div>
+            </div>
+
+            <div class="form-field">
+                <label for="<%= idPrefix %>-min">Minimum subtotal</label>
+                <input type="number" id="<%= idPrefix %>-min" name="minSubtotal" value="<%= c && c.minSubtotal ? c.minSubtotal : '' %>" min="0" step="0.01" placeholder="No minimum">
+            </div>
+
+            <div class="form-field">
+                <label for="<%= idPrefix %>-max">Max total uses</label>
+                <input type="number" id="<%= idPrefix %>-max" name="maxUses" value="<%= c && c.maxUses != null ? c.maxUses : '' %>" min="1" step="1" placeholder="Unlimited">
+            </div>
+
+            <div class="form-field">
+                <label for="<%= idPrefix %>-starts">Starts on</label>
+                <input type="date" id="<%= idPrefix %>-starts" name="startsOn" value="<%= c ? c.startsOn : '' %>">
+            </div>
+
+            <div class="form-field">
+                <label for="<%= idPrefix %>-expires">Last day valid</label>
+                <input type="date" id="<%= idPrefix %>-expires" name="expiresOn" value="<%= c ? c.expiresOn : '' %>">
+            </div>
+
+            <div class="form-field wide">
+                <label class="check">
+                    <input type="checkbox" name="firstTimeOnly" <%= c && c.firstTimeOnly ? 'checked' : '' %>>
+                    First-time customers only
+                </label>
+                <div class="form-hint">Customer must answer "first time" on the booking form, and their phone number can't be on an earlier booking.</div>
+            </div>
+        </div>
+    <% } %>
+
+    <div class="shell">
+        <div class="page-heading">
+            <h1>Discount Codes</h1>
+        </div>
+        <div class="page-sub">Codes customers enter on the Review step of the booking form. A code applies to the whole booking unless you limit it below. Owner-only.</div>
+
+        <% if (typeof successMessage !== 'undefined' && successMessage && successMessage.length) { %>
+            <% successMessage.forEach(function(msg) { %>
+                <div class="flash flash-success"><%= msg %></div>
+            <% }) %>
+        <% } %>
+        <% if (typeof errorMessage !== 'undefined' && errorMessage && errorMessage.length) { %>
+            <% errorMessage.forEach(function(msg) { %>
+                <div class="flash flash-error"><%= msg %></div>
+            <% }) %>
+        <% } %>
+
+        <div class="section-title">New code</div>
+        <form method="POST" action="/admin/site/discounts" class="card">
+            <% discountFields(null, 'new') %>
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Create code</button>
+            </div>
+        </form>
+
+        <div class="section-title">Your codes (<%= codes.length %>)</div>
+        <% if (codes.length === 0) { %>
+            <div class="empty">No discount codes yet. Create one above and it works on the booking form right away.</div>
+        <% } %>
+
+        <% codes.forEach(function (c) { %>
+            <%
+                const status = c.status();
+                const limits = [];
+                limits.push(c.categories.length ? c.categories.join(', ') + ' only' : 'All services');
+                if (c.minSubtotal > 0) limits.push('min $' + c.minSubtotal.toFixed(2));
+                if (c.firstTimeOnly) limits.push('first-time only');
+                if (c.startsOn) limits.push('from ' + c.startsOn);
+                if (c.expiresOn) limits.push('through ' + c.expiresOn);
+            %>
+            <details class="code-item">
+                <summary>
+                    <div class="code-main">
+                        <div class="code-name"><%= c.code %></div>
+                        <div class="code-meta"><%= limits.join(' · ') %><%= c.description ? ' — ' + c.description : '' %></div>
+                    </div>
+                    <span class="code-worth"><%= c.label() %></span>
+                    <span class="code-uses"><%= c.usedCount %> / <%= c.maxUses != null ? c.maxUses : '∞' %> used</span>
+                    <span class="pill is-<%= status.replace(' ', '-') %>"><%= status %></span>
+                </summary>
+                <div class="code-body">
+                    <form method="POST" action="/admin/site/discounts/<%= c._id %>" id="edit-<%= c._id %>">
+                        <% discountFields(c, 'c' + c._id) %>
+                    </form>
+                    <div class="code-body-actions">
+                        <div>
+                            <form method="POST" action="/admin/site/discounts/<%= c._id %>/toggle">
+                                <button type="submit" class="btn-ghost"><%= c.active ? 'Disable' : 'Enable' %></button>
+                            </form>
+                            <form method="POST" action="/admin/site/discounts/<%= c._id %>/delete"
+                                data-confirm="Delete this code? Bookings that already used it keep their discount.">
+                                <button type="submit" class="btn-danger">Delete</button>
+                            </form>
+                        </div>
+                        <button type="submit" class="btn-primary" form="edit-<%= c._id %>">Save changes</button>
+                    </div>
+                </div>
+            </details>
+        <% }) %>
+    </div>
+
+    <script>
+        // Confirm destructive forms. The message comes from a data-
+        // attribute so nothing server-rendered is ever spliced into JS.
+        document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!window.confirm(form.dataset.confirm)) event.preventDefault();
+            });
+        });
+
+        // "Generate": random 8-character code, skipping look-alike
+        // characters (0/O, 1/I/L) so it survives being read off a flyer.
+        document.querySelectorAll('[data-generate-code]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+                var bytes = new Uint8Array(8);
+                window.crypto.getRandomValues(bytes);
+                var code = '';
+                bytes.forEach(function (b) { code += alphabet[b % alphabet.length]; });
+                var input = document.getElementById(btn.dataset.generateCode);
+                input.value = code;
+                input.focus();
+            });
+        });
+    </script>
+</body>
+</html>

@@ -239,6 +239,23 @@
             white-space: nowrap;
         }
         .btn-mini:hover { background: #262626; }
+
+        .size-form { margin-bottom: 10px; align-items: center; }
+        .size-form select,
+        .add-model-row select {
+            font-family: var(--font);
+            font-size: 13px;
+            padding: 7px 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--card2);
+            color: var(--white);
+            outline: none;
+            min-width: 0;
+        }
+        .size-form select:focus,
+        .add-model-row select:focus { border-color: var(--red); }
+        .size-form select.size-missing { border-color: rgba(200,16,46,0.6); color: var(--red); }
         .btn-mini-danger {
             border-color: rgba(200,16,46,0.3);
             color: var(--red);
@@ -310,7 +327,7 @@
             <h1>Vehicle Data</h1>
             <span class="count"><%= Object.keys(vehicleData).length %> makes</span>
         </div>
-        <div class="page-sub">Models and model years available in the booking form. Makes are fixed — add or remove models and years as new vehicles come out.</div>
+        <div class="page-sub">Models and model years available in the booking form. Makes are fixed — add or remove models and years as new vehicles come out. Each model's size sets its size-based pricing automatically, so customers never choose it themselves.</div>
 
         <% if (typeof successMessage !== 'undefined' && successMessage && successMessage.length) { %>
             <% successMessage.forEach(function(msg) { %>
@@ -321,6 +338,18 @@
             <% errorMessage.forEach(function(msg) { %>
                 <div class="flash flash-error"><%= msg %></div>
             <% }) %>
+        <% } %>
+
+        <%
+            const unsized = [];
+            Object.keys(vehicleData).forEach(function(mk) {
+                Object.keys(vehicleData[mk]).forEach(function(md) {
+                    if (!(vehicleSizes[mk] || {})[md]) unsized.push(mk + ' ' + md);
+                });
+            });
+        %>
+        <% if (unsized.length) { %>
+            <div class="flash flash-error"><%= unsized.length %> model<%= unsized.length === 1 ? ' has' : 's have' %> no size set, so customers pick their own size for <%= unsized.length === 1 ? 'it' : 'them' %>: <%= unsized.join(', ') %></div>
         <% } %>
 
         <div class="accordion">
@@ -348,6 +377,18 @@
                                         <button type="submit" class="btn-mini btn-mini-danger">Remove model</button>
                                     </form>
                                 </div>
+                                <% const currentSize = (vehicleSizes[make] || {})[model] || ''; %>
+                                <form method="POST" action="/admin/site/vehicles/size" class="inline-form size-form">
+                                    <input type="hidden" name="make" value="<%= make %>">
+                                    <input type="hidden" name="model" value="<%= model %>">
+                                    <select name="size" aria-label="Size of <%= make %> <%= model %>" class="<%= currentSize ? '' : 'size-missing' %>" required>
+                                        <option value="">No size set</option>
+                                        <% sizeClasses.forEach(function(sc) { %>
+                                            <option value="<%= sc.id %>" <%= currentSize === sc.id ? 'selected' : '' %>><%= sc.label %></option>
+                                        <% }); %>
+                                    </select>
+                                    <button type="submit" class="btn-mini">Save size</button>
+                                </form>
                                 <div class="year-chips">
                                     <% if (years.length === 0) { %>
                                         <span class="no-years">No years added yet</span>
@@ -376,6 +417,12 @@
                         <form method="POST" action="/admin/site/vehicles/model" class="add-model-row">
                             <input type="hidden" name="make" value="<%= make %>">
                             <input type="text" name="model" placeholder="Add a new model…" required>
+                            <select name="size" aria-label="Size of the new model" required>
+                                <option value="">Size…</option>
+                                <% sizeClasses.forEach(function(sc) { %>
+                                    <option value="<%= sc.id %>"><%= sc.label %></option>
+                                <% }); %>
+                            </select>
                             <button type="submit" class="btn-add-model">Add model</button>
                         </form>
                     </div>

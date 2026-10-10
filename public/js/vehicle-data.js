@@ -174,7 +174,7 @@ const VEHICLE_DATA = {
 
     Honda: {
         "Accord": [2025, 2024, 2023, 2022, 2021],
-        "Civic": [2025, 2024, 2023, 2022, 2021],
+        "Civic": [2025, 2024, 2023, 2022, 2021, 2019],
         "Pilot": [2025, 2024, 2023, 2022, 2021],
         "CR-V": [2025, 2024, 2023, 2022, 2021],
         "Odyssey": [2025, 2024, 2023, 2022, 2021],
@@ -229,7 +229,7 @@ const VEHICLE_DATA = {
         "Terrain": [2025, 2024, 2023, 2022, 2021],
         "Acadia": [2025, 2024, 2023, 2022, 2021],
         "Yukon": [2025, 2024, 2023, 2022, 2021],
-        "Acadia Limited": []
+        "Acadia Limited": [2017]
     }
 };
 
@@ -260,3 +260,209 @@ const VEHICLE_TYPES = [
     "Convertible",
     "Other"
 ];
+
+// Size class per model: "car" | "mid" | "large". Edited in Admin → Site → Vehicle Data.
+const VEHICLE_SIZES = {
+    "Cadillac": {
+        "Escalade": "large",
+        "XT4": "mid",
+        "XT5": "mid",
+        "XT6": "large",
+        "CT4": "car",
+        "CT5": "car"
+    },
+    "Buick": {
+        "Encore GX": "mid",
+        "Envista": "mid",
+        "Envision": "mid",
+        "Enclave": "large"
+    },
+    "Chrysler": {
+        "300": "car",
+        "Pacifica": "large",
+        "Voyager": "large"
+    },
+    "Dodge": {
+        "Charger": "car",
+        "Challenger": "car",
+        "Durango": "large",
+        "Hornet": "mid"
+    },
+    "Hyundai": {
+        "Elantra": "car",
+        "Sonata": "car",
+        "Venue": "mid",
+        "Kona": "mid",
+        "Tucson": "mid",
+        "Santa Fe": "mid",
+        "Palisade": "large"
+    },
+    "Kia": {
+        "Forte": "car",
+        "K4": "car",
+        "Rio": "car",
+        "Soul": "car",
+        "Seltos": "mid",
+        "Sportage": "mid",
+        "Sorento": "large",
+        "Telluride": "large"
+    },
+    "Subaru": {
+        "Impreza": "car",
+        "Legacy": "car",
+        "WRX": "car",
+        "Crosstrek": "mid",
+        "Forester": "mid",
+        "Outback": "mid",
+        "Ascent": "large"
+    },
+    "Mazda": {
+        "Mazda3": "car",
+        "Mazda6": "car",
+        "CX-30": "mid",
+        "CX-5": "mid",
+        "CX-50": "mid",
+        "CX-90": "large"
+    },
+    "Volkswagen": {
+        "Jetta": "car",
+        "Passat": "car",
+        "Taos": "mid",
+        "Tiguan": "mid",
+        "Atlas": "large",
+        "Atlas Cross Sport": "mid",
+        "Golf GTI": "car"
+    },
+    "BMW": {
+        "228i": "car",
+        "330i": "car",
+        "430i": "car",
+        "530i": "car",
+        "X1": "mid",
+        "X3": "mid",
+        "X5": "mid"
+    },
+    "Mercedes-Benz": {
+        "C-Class": "car",
+        "E-Class": "car",
+        "GLA": "mid",
+        "GLB": "mid",
+        "GLE": "mid",
+        "GLS": "large",
+        "Sprinter": "large"
+    },
+    "Audi": {
+        "A3": "car",
+        "A4": "car",
+        "A5": "car",
+        "Q3": "mid",
+        "Q5": "mid",
+        "Q7": "large"
+    },
+    "Lexus": {
+        "IS": "car",
+        "ES": "car",
+        "RX": "mid",
+        "NX": "mid",
+        "GX": "large",
+        "LX": "large"
+    },
+    "Acura": {
+        "Integra": "car",
+        "TLX": "car",
+        "RDX": "mid",
+        "MDX": "large"
+    },
+    "Tesla": {
+        "Model 3": "car",
+        "Model Y": "mid",
+        "Model S": "car",
+        "Model X": "large",
+        "Cybertruck": "large"
+    },
+    "Chevrolet": {
+        "Silverado 1500": "large",
+        "Silverado 2500HD": "large",
+        "Suburban": "large",
+        "Tahoe": "large",
+        "Traverse": "large",
+        "Equinox": "mid",
+        "Malibu": "car",
+        "Camaro": "car",
+        "Corvette": "car"
+    },
+    "Ford": {
+        "F-150": "large",
+        "F-250": "large",
+        "F-350": "large",
+        "Explorer": "large",
+        "Expedition": "large",
+        "Escape": "mid",
+        "Mustang": "car",
+        "Bronco": "mid",
+        "Maverick": "large"
+    },
+    "Toyota": {
+        "Camry": "car",
+        "Corolla": "car",
+        "Tacoma": "large",
+        "Tundra": "large",
+        "4Runner": "mid",
+        "Highlander": "large",
+        "RAV4": "mid",
+        "Sequoia": "large",
+        "Land Cruiser": "large"
+    },
+    "Honda": {
+        "Accord": "car",
+        "Civic": "car",
+        "Pilot": "large",
+        "CR-V": "mid",
+        "Odyssey": "large",
+        "Ridgeline": "large"
+    },
+    "Nissan": {
+        "Altima": "car",
+        "Sentra": "car",
+        "Rogue": "mid",
+        "Pathfinder": "large",
+        "Titan": "large",
+        "Frontier": "large"
+    },
+    "Jeep": {
+        "Wrangler": "mid",
+        "Gladiator": "large",
+        "Cherokee": "mid",
+        "Grand Cherokee": "mid",
+        "Compass": "mid"
+    },
+    "Jaguar": {
+        "XF": "car"
+    },
+    "Land Rover": {
+        "Range Rover": "large",
+        "Range Rover Sport": "mid",
+        "Range Rover Evoque": "mid",
+        "Range Rover Velar": "mid",
+        "Defender": "large",
+        "Discovery": "large"
+    },
+    "Lamborghini": {
+        "Huracan": "car",
+        "Urus": "mid",
+        "Revuelto": "car"
+    },
+    "Ram": {
+        "1500": "large",
+        "2500": "large",
+        "3500": "large"
+    },
+    "GMC": {
+        "Sierra 1500": "large",
+        "Sierra 2500HD": "large",
+        "Terrain": "mid",
+        "Acadia": "large",
+        "Yukon": "large",
+        "Acadia Limited": "large"
+    }
+};

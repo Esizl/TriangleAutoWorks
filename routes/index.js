@@ -2,10 +2,19 @@ const router = require('express').Router()
 const { ensureAuthenticated } = require('../config/ensureAuth')
 const version = require('../config/config.json').server.version
 const User = require('../models/User')
+const Review = require('../models/Review')
 
 // --- Home route ---
 router.get('/', async (req, res) => {
-    res.render('index', { version })
+    // Reviews are an extra on the home page: if they fail to load, log it
+    // loudly but still serve the page (the section just doesn't render).
+    let reviewSummary = { count: 0, average: 0, reviews: [] }
+    try {
+        reviewSummary = await Review.publicSummary()
+    } catch (err) {
+        console.error('[home] Failed to load reviews:', err)
+    }
+    res.render('index', { version, reviewSummary })
 })
 
 router.get('/booking', async (req, res) => {

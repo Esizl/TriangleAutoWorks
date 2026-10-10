@@ -117,6 +117,13 @@ function buildConfiguratorHTML() {
     const container = document.getElementById('serviceConfigurator');
     if (!container) return;
 
+    // Detailing has its own option cards (detailingConfigurator.js) but
+    // shares this container, the estimate card and the admin payload.
+    if (state.category === 'Detailing') {
+        container.innerHTML = buildDetailingConfiguratorHTML();
+        return;
+    }
+
     if (state.category !== 'Automotive') {
         container.innerHTML = '';
         return;
@@ -398,6 +405,14 @@ function buildLineItem(label, partRecord, qty, unitLabel) {
  * stay in sync.
  */
 function computeEstimate() {
+    // Any discount code (discount.js) comes off the finished estimate,
+    // so it works the same for every category.
+    return applyDiscountToEstimate(computeBaseEstimate());
+}
+
+function computeBaseEstimate() {
+    if (state.category === 'Detailing') return computeDetailingEstimate();
+
     const specs = resolveVehicleSpecs();
     const vehicle = currentVehicle();
     const lineItems = [];
@@ -622,6 +637,26 @@ function computeEstimate() {
     };
 }
 
+/** Categories that have a configurator + priced estimate (Tint doesn't yet). */
+function categoryHasEstimate(category) {
+    return category === 'Automotive' || category === 'Detailing';
+}
+
+/**
+ * Price cell for one labor/service line. Detailing can have lines with
+ * no number yet ("Custom quote") or a starting price ("$799+").
+ */
+function formatEstimateLinePrice(li) {
+    if (li.isQuote) return 'Quoted on site';
+    return `${li.isFromPrice ? 'From ' : ''}$${li.cost.toFixed(2)}`;
+}
+
+/** Grand total, prefixed "From" when any line is a starting price or still to be quoted. */
+function formatEstimateTotal(estimate) {
+    const open = estimate.isStartingPrice || estimate.hasQuoteItems;
+    return `${open ? 'From ' : ''}$${estimate.total.toFixed(2)}`;
+}
+
 /**
  * Render the customer-facing estimate card (#selectedPartsList /
  * #partsEstimateTotal) from the current computeEstimate() output.
@@ -631,8 +666,14 @@ function renderEstimateCard() {
     const totalEl = document.getElementById('partsEstimateTotal');
     if (!listEl || !totalEl) return;
 
-    if (state.category !== 'Automotive' || state.services.length === 0) {
-        listEl.innerHTML = 'No parts selected yet.';
+    const isDetailing = state.category === 'Detailing';
+    const headerEl = document.getElementById('estimateHeader');
+    const totalLabelEl = document.getElementById('estimateTotalLabel');
+    if (headerEl) headerEl.textContent = isDetailing ? 'Your Estimate' : 'Estimated Parts';
+    if (totalLabelEl) totalLabelEl.textContent = isDetailing ? 'Estimated Total:' : 'Estimated Parts Total:';
+
+    if (!categoryHasEstimate(state.category) || state.services.length === 0) {
+        listEl.innerHTML = isDetailing ? 'No services selected yet.' : 'No parts selected yet.';
         totalEl.textContent = '$0.00';
         state.lastEstimate = null;
         return;
@@ -660,7 +701,9 @@ function renderEstimateCard() {
 
     estimate.laborItems.forEach(li => {
         let hoursLabel;
-        if (li.isTripCharge) {
+        if (estimate.kind === 'detailing') {
+            hoursLabel = ''; // time is shown once, as a total, below
+        } else if (li.isTripCharge) {
             hoursLabel = ' — flat trip charge, mostly covers the drive-out';
         } else if (li.isComplimentary) {
             hoursLabel = ` (${li.hours.toFixed(2)} hrs, complimentary)`;
@@ -670,7 +713,7 @@ function renderEstimateCard() {
         rows += `
             <div class="estimate-line-item">
                 <span class="estimate-line-label">${li.label}${hoursLabel}</span>
-                <span class="estimate-line-price">$${li.cost.toFixed(2)}</span>
+                <span class="estimate-line-price">${formatEstimateLinePrice(li)}</span>
             </div>
         `;
     });
@@ -680,23 +723,39 @@ function renderEstimateCard() {
             <span class="estimate-line-label">Subtotal</span>
             <span class="estimate-line-price">$${estimate.subtotal.toFixed(2)}</span>
         </div>
+        ${estimate.discountAmount > 0 ? `<div class="estimate-line-item estimate-discount">
+            <span class="estimate-line-label">Discount (${estimate.discount.code} — ${estimate.discount.label})</span>
+            <span class="estimate-line-price">−$${estimate.discountAmount.toFixed(2)}</span>
+        </div>` : ''}
         <div class="estimate-line-item">
             <span class="estimate-line-label">Tax (7%)</span>
             <span class="estimate-line-price">$${estimate.tax.toFixed(2)}</span>
         </div>
     `;
 
+    if (estimate.discountNote) {
+        rows += `<div class="config-estimate-flag">${estimate.discountNote}</div>`;
+    }
     if (estimate.vehicle.isEstimateSpecs) {
         rows += `<div class="config-estimate-flag">Some figures are estimated — final pricing confirmed on site.</div>`;
     }
     if (estimate.hasPlaceholderPricing) {
-        rows += `<div class="config-estimate-flag">Some part prices are placeholders pending catalog updates.</div>`;
+        rows += `<div class="config-estimate-flag">Some ${estimate.kind === 'detailing' ? '' : 'part '}prices are placeholders pending catalog updates.</div>`;
+    }
+    if (estimate.hasQuoteItems) {
+        rows += `<div class="config-estimate-flag">Quoted items aren't in this total — we'll price them on site before any work starts.</div>`;
+    }
+    if (estimate.kind === 'detailing') {
+        rows += `<div class="estimate-line-item">
+            <span class="estimate-line-label">Time on site</span>
+            <span class="estimate-line-price">${formatDetailingDuration(estimate.totalHours)}</span>
+        </div>`;
     }
 
-    rows += `<div class="estimate-disclaimer">Final pricing may vary based on vehicle condition and parts availability.</div>`;
+    rows += `<div class="estimate-disclaimer">Final pricing may vary based on vehicle condition${estimate.kind === 'detailing' ? '' : ' and parts availability'}.</div>`;
 
     listEl.innerHTML = rows;
-    totalEl.textContent = `$${estimate.total.toFixed(2)}`;
+    totalEl.textContent = formatEstimateTotal(estimate);
 }
 
 /**
@@ -718,13 +777,18 @@ function buildAdminPayload() {
         pricing: {
             partsSubtotal: estimate.partsSubtotal,
             laborSubtotal: estimate.laborSubtotal,
-            subtotal: estimate.subtotal,
+            subtotal: estimate.subtotal,       // before discount
+            discount: estimate.discountAmount, // preview — the server recomputes it on submit
+            taxRate: estimate.taxRate,
             tax: estimate.tax,
-            total: estimate.total
+            total: estimate.total,
+            estimatedHours: estimate.totalHours ?? null // Detailing only
         },
         flags: {
             hasPlaceholderPricing: estimate.hasPlaceholderPricing,
-            isEstimateSpecs: estimate.vehicle.isEstimateSpecs
+            isEstimateSpecs: estimate.vehicle.isEstimateSpecs,
+            hasQuoteItems: !!estimate.hasQuoteItems,     // Detailing only
+            isStartingPrice: !!estimate.isStartingPrice  // Detailing only
         }
     };
 }
@@ -743,3 +807,7 @@ function refreshConfiguratorAndEstimate() {
 window.refreshConfiguratorAndEstimate = refreshConfiguratorAndEstimate;
 window.buildAdminPayload = buildAdminPayload;
 window.computeEstimate = computeEstimate;
+window.computeBaseEstimate = computeBaseEstimate;
+window.categoryHasEstimate = categoryHasEstimate;
+window.formatEstimateLinePrice = formatEstimateLinePrice;
+window.formatEstimateTotal = formatEstimateTotal;

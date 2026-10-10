@@ -1,11 +1,13 @@
 const router = require('express').Router()
 const { ensureAdmin } = require('../config/ensureAuth')
-const { loadVehicleData, saveVehicleData } = require('../vehicleDataStore')
+const { loadVehicleData, saveVehicleData, VEHICLE_SIZE_CLASSES, isValidSizeClass } = require('../vehicleDataStore')
 const { loadBlocklist, saveBlocklist } = require('../blocklistStore')
 const Booking = require('../models/Booking')
 const VehicleSpec = require('../models/VehicleSpec')
 const BusinessConfig = require('../models/BusinessConfig')
 const PartsCatalog = require('../models/PartsCatalog')
+const DiscountCode = require('../models/DiscountCode')
+const Review = require('../models/Review')
 const User = require('../models/User')
 const bcrypt = require('bcrypt')
 const crypto = require('crypto')
@@ -30,7 +32,7 @@ function ensureOwner(req, res, next) {
     if (req.user && req.user.role >= 3) {
         return next()
     }
-    req.flash('errorMessage', 'Only the owner can manage vehicle specs.')
+    req.flash('errorMessage', 'Only the owner can access that page.')
     return res.redirect('/admin/site')
 }
 
@@ -258,6 +260,59 @@ router.post('/users/:id/delete', ensureAdmin, async (req, res) => {
     }
 })
 
+// --- Reviews: moderation (a review shows on the home page only once approved) ---
+router.get('/reviews', ensureAdmin, ensureOwner, async (req, res) => {
+    try {
+        // Waiting reviews first, then published, then hidden; newest first within each.
+        const order = { pending: 0, approved: 1, hidden: 2 }
+        const reviews = (await Review.find().sort({ createdAt: -1 }))
+            .sort((a, b) => order[a.status] - order[b.status])
+        res.render('admin/reviews', { reviews })
+    } catch (err) {
+        console.error(err)
+        req.flash('errorMessage', 'Failed to load reviews.')
+        res.redirect('/admin/site')
+    }
+})
+
+router.post('/reviews/:id/status', ensureAdmin, ensureOwner, async (req, res) => {
+    try {
+        const { status } = req.body
+        if (!Review.STATUSES.includes(status)) {
+            req.flash('errorMessage', 'Invalid review status.')
+            return res.redirect('/admin/reviews')
+        }
+        const review = await Review.findByIdAndUpdate(req.params.id, { status }, { new: true })
+        if (!review) {
+            req.flash('errorMessage', 'Review not found.')
+            return res.redirect('/admin/reviews')
+        }
+        const what = status === 'approved' ? 'is now published on the home page' : 'is no longer shown on the site'
+        req.flash('successMessage', `Review from ${review.displayName} ${what}.`)
+        res.redirect('/admin/reviews')
+    } catch (err) {
+        console.error(err)
+        req.flash('errorMessage', 'Failed to update review.')
+        res.redirect('/admin/reviews')
+    }
+})
+
+router.post('/reviews/:id/delete', ensureAdmin, ensureOwner, async (req, res) => {
+    try {
+        const review = await Review.findByIdAndDelete(req.params.id)
+        if (!review) {
+            req.flash('errorMessage', 'Review not found.')
+            return res.redirect('/admin/reviews')
+        }
+        req.flash('successMessage', `Deleted the review from ${review.displayName}.`)
+        res.redirect('/admin/reviews')
+    } catch (err) {
+        console.error(err)
+        req.flash('errorMessage', 'Failed to delete review.')
+        res.redirect('/admin/reviews')
+    }
+})
+
 // --- Site landing page ---
 router.get('/site', ensureAdmin, (req, res) => {
     res.render('admin/site-index')
@@ -266,8 +321,12 @@ router.get('/site', ensureAdmin, (req, res) => {
 // --- Site: vehicle data list ---
 router.get('/site/vehicles', ensureAdmin, async (req, res) => {
     try {
-        const { VEHICLE_DATA } = loadVehicleData()
-        res.render('admin/site-vehicles', { vehicleData: VEHICLE_DATA })
+        const { VEHICLE_DATA, VEHICLE_SIZES } = loadVehicleData()
+        res.render('admin/site-vehicles', {
+            vehicleData: VEHICLE_DATA,
+            vehicleSizes: VEHICLE_SIZES,
+            sizeClasses: VEHICLE_SIZE_CLASSES
+        })
     } catch (err) {
         console.error(err)
         req.flash('errorMessage', 'Failed to load vehicle data.')
@@ -285,7 +344,15 @@ router.post('/site/vehicles/model', ensureAdmin, async (req, res) => {
             return res.redirect('/admin/site/vehicles')
         }
 
-        const { VEHICLE_DATA, COLORS, VEHICLE_TYPES } = loadVehicleData()
+        // Every model needs a size class — it sets size-based pricing on
+        // the booking form, so customers never pick their own.
+        const size = req.body.size
+        if (!isValidSizeClass(size)) {
+            req.flash('errorMessage', 'Choose a size for the new model.')
+            return res.redirect('/admin/site/vehicles')
+        }
+
+        const { VEHICLE_DATA, COLORS, VEHICLE_TYPES, VEHICLE_SIZES } = loadVehicleData()
 
         if (!VEHICLE_DATA[make]) {
             req.flash('errorMessage', 'Unknown make.')
@@ -300,7 +367,8 @@ router.post('/site/vehicles/model', ensureAdmin, async (req, res) => {
         }
 
         VEHICLE_DATA[make][trimmedModel] = []
-        saveVehicleData(VEHICLE_DATA, COLORS, VEHICLE_TYPES)
+        VEHICLE_SIZES[make] = { ...VEHICLE_SIZES[make], [trimmedModel]: size }
+        saveVehicleData(VEHICLE_DATA, COLORS, VEHICLE_TYPES, VEHICLE_SIZES)
 
         req.flash('successMessage', `Added ${trimmedModel} to ${make}.`)
         res.redirect('/admin/site/vehicles')
@@ -330,6 +398,36 @@ router.post('/site/vehicles/model/delete', ensureAdmin, async (req, res) => {
     } catch (err) {
         console.error(err)
         req.flash('errorMessage', 'Failed to delete model.')
+        res.redirect('/admin/site/vehicles')
+    }
+})
+
+// --- Set a model's size class (drives size-based pricing on the booking form) ---
+router.post('/site/vehicles/size', ensureAdmin, async (req, res) => {
+    try {
+        const { make, model, size } = req.body
+
+        if (!isValidSizeClass(size)) {
+            req.flash('errorMessage', 'Choose a size.')
+            return res.redirect('/admin/site/vehicles')
+        }
+
+        const { VEHICLE_DATA, COLORS, VEHICLE_TYPES, VEHICLE_SIZES } = loadVehicleData()
+
+        if (!VEHICLE_DATA[make] || !VEHICLE_DATA[make][model]) {
+            req.flash('errorMessage', 'Model not found.')
+            return res.redirect('/admin/site/vehicles')
+        }
+
+        VEHICLE_SIZES[make] = { ...VEHICLE_SIZES[make], [model]: size }
+        saveVehicleData(VEHICLE_DATA, COLORS, VEHICLE_TYPES, VEHICLE_SIZES)
+
+        const label = VEHICLE_SIZE_CLASSES.find(c => c.id === size).label
+        req.flash('successMessage', `${make} ${model} is now sized as ${label}.`)
+        res.redirect('/admin/site/vehicles')
+    } catch (err) {
+        console.error(err)
+        req.flash('errorMessage', 'Failed to set size.')
         res.redirect('/admin/site/vehicles')
     }
 })
@@ -657,6 +755,149 @@ router.post('/site/config', ensureAdmin, ensureOwner, async (req, res) => {
         console.error(err)
         req.flash('errorMessage', 'Failed to save business config.')
         res.redirect('/admin/site/config')
+    }
+})
+
+// --- Site: discount codes ---
+// Turns the create/edit form body into a clean DiscountCode field set.
+// Returns { fields } or { error } — the error is shown to the admin as-is.
+function parseDiscountForm(body) {
+    const code = DiscountCode.normalizeCode(body.code)
+    if (!DiscountCode.CODE_PATTERN.test(code)) {
+        return { error: 'Code must be 3–24 characters: letters, numbers and dashes only.' }
+    }
+
+    const type = body.type
+    if (!['percent', 'fixed'].includes(type)) return { error: 'Choose percent or dollar amount.' }
+
+    const value = parseFloat(body.value)
+    if (isNaN(value) || value <= 0) return { error: 'Discount value must be more than 0.' }
+    if (type === 'percent' && value > 100) return { error: 'A percent discount cannot be more than 100.' }
+
+    const picked = [].concat(body.categories || [])
+    if (picked.some(c => !DiscountCode.CATEGORIES.includes(c))) return { error: 'Unknown service category.' }
+    // Every box ticked means the same as none ticked: no restriction.
+    const categories = picked.length === DiscountCode.CATEGORIES.length ? [] : picked
+
+    const minSubtotal = body.minSubtotal === '' || body.minSubtotal == null ? 0 : parseFloat(body.minSubtotal)
+    if (isNaN(minSubtotal) || minSubtotal < 0) return { error: 'Minimum subtotal must be 0 or more.' }
+
+    let maxUses = null
+    if (body.maxUses !== '' && body.maxUses != null) {
+        maxUses = parseInt(body.maxUses, 10)
+        if (isNaN(maxUses) || maxUses < 1) return { error: 'Max uses must be a whole number of at least 1, or blank for unlimited.' }
+    }
+
+    const startsOn = (body.startsOn || '').trim()
+    const expiresOn = (body.expiresOn || '').trim()
+    if (startsOn && !DiscountCode.DATE_PATTERN.test(startsOn)) return { error: 'Start date is not a valid date.' }
+    if (expiresOn && !DiscountCode.DATE_PATTERN.test(expiresOn)) return { error: 'End date is not a valid date.' }
+    if (startsOn && expiresOn && expiresOn < startsOn) return { error: 'End date cannot be before the start date.' }
+
+    return {
+        fields: {
+            code,
+            description: (body.description || '').trim(),
+            type,
+            value,
+            categories,
+            minSubtotal,
+            maxUses,
+            firstTimeOnly: body.firstTimeOnly === 'on',
+            startsOn,
+            expiresOn
+        }
+    }
+}
+
+router.get('/site/discounts', ensureAdmin, ensureOwner, async (req, res) => {
+    try {
+        const codes = await DiscountCode.find().sort({ createdAt: -1 })
+        res.render('admin/site-discounts', { codes, categories: DiscountCode.CATEGORIES })
+    } catch (err) {
+        console.error(err)
+        req.flash('errorMessage', 'Failed to load discount codes.')
+        res.redirect('/admin/site')
+    }
+})
+
+router.post('/site/discounts', ensureAdmin, ensureOwner, async (req, res) => {
+    try {
+        const parsed = parseDiscountForm(req.body)
+        if (parsed.error) {
+            req.flash('errorMessage', parsed.error)
+            return res.redirect('/admin/site/discounts')
+        }
+        if (await DiscountCode.exists({ code: parsed.fields.code })) {
+            req.flash('errorMessage', `Code "${parsed.fields.code}" already exists.`)
+            return res.redirect('/admin/site/discounts')
+        }
+        await DiscountCode.create(parsed.fields)
+        req.flash('successMessage', `Code "${parsed.fields.code}" created.`)
+        res.redirect('/admin/site/discounts')
+    } catch (err) {
+        console.error(err)
+        req.flash('errorMessage', 'Failed to create discount code.')
+        res.redirect('/admin/site/discounts')
+    }
+})
+
+router.post('/site/discounts/:id', ensureAdmin, ensureOwner, async (req, res) => {
+    try {
+        const parsed = parseDiscountForm(req.body)
+        if (parsed.error) {
+            req.flash('errorMessage', parsed.error)
+            return res.redirect('/admin/site/discounts')
+        }
+        if (await DiscountCode.exists({ code: parsed.fields.code, _id: { $ne: req.params.id } })) {
+            req.flash('errorMessage', `Code "${parsed.fields.code}" already exists.`)
+            return res.redirect('/admin/site/discounts')
+        }
+        const updated = await DiscountCode.findByIdAndUpdate(req.params.id, { $set: parsed.fields }, { new: true })
+        if (!updated) {
+            req.flash('errorMessage', 'Discount code not found.')
+            return res.redirect('/admin/site/discounts')
+        }
+        req.flash('successMessage', `Code "${updated.code}" saved.`)
+        res.redirect('/admin/site/discounts')
+    } catch (err) {
+        console.error(err)
+        req.flash('errorMessage', 'Failed to save discount code.')
+        res.redirect('/admin/site/discounts')
+    }
+})
+
+router.post('/site/discounts/:id/toggle', ensureAdmin, ensureOwner, async (req, res) => {
+    try {
+        const code = await DiscountCode.findById(req.params.id)
+        if (!code) {
+            req.flash('errorMessage', 'Discount code not found.')
+            return res.redirect('/admin/site/discounts')
+        }
+        code.active = !code.active
+        await code.save()
+        req.flash('successMessage', `Code "${code.code}" ${code.active ? 'enabled' : 'disabled'}.`)
+        res.redirect('/admin/site/discounts')
+    } catch (err) {
+        console.error(err)
+        req.flash('errorMessage', 'Failed to update discount code.')
+        res.redirect('/admin/site/discounts')
+    }
+})
+
+router.post('/site/discounts/:id/delete', ensureAdmin, ensureOwner, async (req, res) => {
+    try {
+        const deleted = await DiscountCode.findByIdAndDelete(req.params.id)
+        if (!deleted) {
+            req.flash('errorMessage', 'Discount code not found.')
+            return res.redirect('/admin/site/discounts')
+        }
+        req.flash('successMessage', `Code "${deleted.code}" deleted. Bookings that already used it keep their discount.`)
+        res.redirect('/admin/site/discounts')
+    } catch (err) {
+        console.error(err)
+        req.flash('errorMessage', 'Failed to delete discount code.')
+        res.redirect('/admin/site/discounts')
     }
 })
 

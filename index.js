@@ -45,6 +45,7 @@ app.use('/auth', require('./routes/auth'))
 app.use('/api', require('./routes/api'))
 app.use('/api/availability', require('./routes/availability'))
 app.use('/settings', require('./routes/settings'))
+app.use('/account', require('./routes/account'))
 app.use('/admin', require('./routes/admin'))
 app.use('/auth/webauthn', require('./routes/webauthn'))
 

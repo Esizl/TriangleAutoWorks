@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="/css/index.css">
+    <link rel="stylesheet" href="/css/reviews.css">
 </head>
 
 <body>
@@ -34,6 +35,9 @@
             <li><a href="#services">Services</a></li>
             <li><a href="#pricing">Pricing</a></li>
             <li><a href="#bundles">Packages</a></li>
+            <% if (reviewSummary.count > 0) { %>
+                <li><a href="#reviews">Reviews</a></li>
+            <% } %>
             <% if (user) { %>
                 <li class="nav-account" id="navAccount">
                     <button class="nav-account-trigger" onclick="toggleAccountMenu(event)">
@@ -48,6 +52,7 @@
                     <div class="nav-account-menu">
                         <div class="nav-account-name"><%= user.name %></div>
                         <div class="nav-account-email"><%= user.email %></div>
+                        <a href="/account/orders">Order History</a>
                         <a href="/settings">Settings</a>
                         <% if (user.role >= 2) { %>
                             <a href="/admin">Admin Dashboard</a>
@@ -439,6 +444,29 @@
             </div>
         </div>
     </section> -->
+
+    <!-- REVIEWS (approved customer reviews; hidden until there is at least one) -->
+    <% if (reviewSummary.count > 0) { %>
+    <section id="reviews" class="reviews">
+        <div class="section-label">Customer Reviews</div>
+        <h2 class="section-title">What Customers Say</h2>
+        <div class="reviews-summary">
+            <span class="reviews-average"><%= reviewSummary.average.toFixed(1) %></span>
+            <span class="review-stars" role="img" aria-label="<%= reviewSummary.average.toFixed(1) %> out of 5 stars"><% for (let i = 1; i <= 5; i++) { %><span class="<%= i <= Math.round(reviewSummary.average) ? '' : 'off' %>">★</span><% } %></span>
+            <span class="reviews-count"><%= reviewSummary.count %> review<%= reviewSummary.count === 1 ? '' : 's' %> from booked customers</span>
+        </div>
+        <div class="reviews-grid">
+            <% reviewSummary.reviews.forEach(function(r) { %>
+                <div class="review-card">
+                    <div class="review-stars" role="img" aria-label="<%= r.rating %> out of 5 stars"><% for (let i = 1; i <= 5; i++) { %><span class="<%= i <= r.rating ? '' : 'off' %>">★</span><% } %></div>
+                    <p class="review-card-text"><%= r.text %></p>
+                    <div class="review-card-name"><%= r.displayName %></div>
+                    <div class="review-card-meta"><%= (r.services || []).join(', ') %><%= r.vehicle ? ' · ' + r.vehicle : '' %></div>
+                </div>
+            <% }) %>
+        </div>
+    </section>
+    <% } %>
 
     <!-- MOBILE CALLOUT -->
     <div id="mobile" class="mobile-callout">

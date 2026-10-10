@@ -25,7 +25,9 @@ const LaborLineItemSchema = new mongoose.Schema({
     cost: Number,
     actualLaborCost: Number,   // present on bundled/complimentary diagnostic
     isComplimentary: Boolean,
-    isTripCharge: Boolean
+    isTripCharge: Boolean,
+    isQuote: Boolean,          // Detailing: priced on site, cost is 0 here
+    isFromPrice: Boolean       // Detailing: starting price ("$799+")
 }, { _id: false })
 
 const BookingSchema = new mongoose.Schema({
@@ -47,20 +49,38 @@ const BookingSchema = new mongoose.Schema({
     selections: mongoose.Schema.Types.Mixed,      // state.selectedParts — per-service configurator choices
     serviceNotes: mongoose.Schema.Types.Mixed,    // e.g. { "Oil Change": { highMileage: true } }
 
-    // ── Pricing (Automotive only — null/empty for Detailing & Tint) ──
+    // ── Discount code (any category) ──
+    // Snapshot of the code as redeemed, so later edits/deletes of the
+    // code never change what this booking was promised. `amount` is
+    // null when the category has no online pricing (applied to the quote).
+    discount: {
+        code: String,
+        type: { type: String, enum: ['percent', 'fixed'] },
+        value: Number,
+        label: String,
+        amount: Number
+    },
+
+    // ── Pricing (Automotive + Detailing — null/empty for Tint) ──
+    // Detailing has no parts; every charge is a labor line.
     parts: [PartLineItemSchema],
     labor: [LaborLineItemSchema],
     toolsNeeded: [String],
     pricing: {
         partsSubtotal: Number,
         laborSubtotal: Number,
-        subtotal: Number,
-        tax: Number,
-        total: Number
+        subtotal: Number,           // before discount
+        discount: Number,           // dollars off the subtotal (0 / unset = none)
+        taxRate: Number,
+        tax: Number,                // charged on subtotal minus discount
+        total: Number,
+        estimatedHours: Number      // Detailing: time on site
     },
     flags: {
         hasPlaceholderPricing: Boolean,
-        isEstimateSpecs: Boolean
+        isEstimateSpecs: Boolean,
+        hasQuoteItems: Boolean,     // Detailing: total excludes on-site quotes
+        isStartingPrice: Boolean    // Detailing: total is a "from" price
     },
 
     // ── Logistics ──
@@ -79,6 +99,11 @@ const BookingSchema = new mongoose.Schema({
     },
     notes: String,
     hearAbout: String,
+
+    // ── Account ──
+    // Set when the booking was made while logged in; null for guests.
+    // Drives Account → Order History and who may review the booking.
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
 
     // ── Admin workflow ──
     status: {

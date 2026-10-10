@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reviews — Triangle Auto Works</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --black: #0A0A0A;
+            --card: #141414;
+            --card2: #1C1C1C;
+            --red: #C8102E;
+            --red-dark: #9E0C24;
+            --red-soft: rgba(200, 16, 46, 0.12);
+            --silver: #C0C0C0;
+            --silver-dim: #7A7A7A;
+            --white: #F5F5F5;
+            --text: #CCCCCC;
+            --border: rgba(255, 255, 255, 0.07);
+            --blue: #4F9DFF;
+            --green: #4ADE80;
+            --amber: #E8B339;
+            --radius: 4px;
+            --font-display: 'Bebas Neue', sans-serif;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { -webkit-font-smoothing: antialiased; }
+        body { background: var(--black); color: var(--white); font-family: var(--font); font-size: 15px; line-height: 1.45; }
+
+        .topbar {
+            position: sticky; top: 0; z-index: 10;
+            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(200, 16, 46, 0.25);
+            padding: 0 32px; height: 60px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .topbar-title { font-family: var(--font-display); font-size: 19px; letter-spacing: 0.03em; color: var(--white); }
+        .topbar-back {
+            display: flex; align-items: center; gap: 6px;
+            color: var(--silver-dim); text-decoration: none;
+            font-size: 13px; font-weight: 600; transition: color 0.15s;
+        }
+        .topbar-back:hover { color: var(--white); }
+        .topbar-back svg { width: 13px; height: 13px; stroke: currentColor; }
+        .topbar-spacer { width: 90px; flex-shrink: 0; }
+
+        .shell { max-width: 820px; margin: 0 auto; padding: 44px 32px 120px; }
+        .page-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 6px; }
+        .page-heading h1 { font-family: var(--font-display); font-size: 34px; letter-spacing: 0.03em; color: var(--white); }
+        .page-heading .count { font-size: 14px; color: var(--silver-dim); font-weight: 500; white-space: nowrap; }
+        .page-sub { font-size: 13.5px; color: var(--silver-dim); margin-bottom: 28px; }
+
+        .flash { padding: 13px 16px; border-radius: var(--radius); font-size: 13.5px; margin-bottom: 20px; font-weight: 500; }
+        .flash-success { background: rgba(74,222,128,0.12); border: 1px solid rgba(74,222,128,0.3); color: var(--green); }
+        .flash-error { background: var(--red-soft); border: 1px solid rgba(200,16,46,0.3); color: var(--red); }
+
+        .empty { font-size: 13.5px; color: var(--silver-dim); padding: 32px; text-align: center; border: 1px dashed var(--border); border-radius: var(--radius); }
+
+        .review { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 10px; }
+        .review.is-pending { border-color: rgba(232, 179, 57, 0.35); }
+        .review-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+        .review-name { font-size: 15px; font-weight: 600; color: var(--white); }
+        .review-meta { font-size: 12.5px; color: var(--silver-dim); margin-top: 2px; overflow-wrap: anywhere; }
+        .review-meta a { color: var(--silver); }
+        .stars { color: var(--amber); font-size: 16px; letter-spacing: 2px; margin-top: 10px; }
+        .stars .off { color: rgba(255, 255, 255, 0.15); }
+        .review-text { font-size: 14px; color: var(--text); margin-top: 8px; white-space: pre-line; overflow-wrap: anywhere; }
+        .review-text.none { color: var(--silver-dim); font-style: italic; }
+
+        .pill {
+            font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+            padding: 4px 9px; border-radius: 999px; white-space: nowrap; flex-shrink: 0;
+            background: rgba(255,255,255,0.06); color: var(--silver-dim);
+        }
+        .pill.is-pending { background: rgba(232,179,57,0.12); color: var(--amber); }
+        .pill.is-approved { background: rgba(74,222,128,0.12); color: var(--green); }
+
+        .review-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+        .review-actions form { display: inline; }
+        .btn-primary, .btn-ghost, .btn-danger {
+            font-family: var(--font); font-size: 12.5px; font-weight: 600;
+            padding: 8px 14px; border-radius: var(--radius); cursor: pointer; white-space: nowrap;
+        }
+        .btn-primary { border: none; background: var(--red); color: var(--white); }
+        .btn-primary:hover { background: var(--red-dark); }
+        .btn-ghost { border: 1px solid var(--border); background: transparent; color: var(--text); }
+        .btn-ghost:hover { border-color: var(--silver-dim); color: var(--white); }
+        .btn-danger { border: 1px solid rgba(200,16,46,0.4); background: transparent; color: var(--red); }
+        .btn-danger:hover { background: var(--red-soft); }
+
+        @media (max-width: 480px) {
+            .topbar { padding: 0 16px; }
+            .topbar-spacer { display: none; }
+            .shell { padding: 24px 16px 80px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <a href="/admin/site" class="topbar-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Site
+        </a>
+        <div class="topbar-title">Triangle Auto Works — Admin</div>
+        <div class="topbar-spacer"></div>
+    </div>
+
+    <div class="shell">
+        <% const pendingCount = reviews.filter(function(r) { return r.status === 'pending'; }).length; %>
+        <div class="page-heading">
+            <h1>Reviews</h1>
+            <span class="count"><%= pendingCount %> waiting · <%= reviews.length %> total</span>
+        </div>
+        <div class="page-sub">Customers leave these from their order history after a completed booking. A review only shows on the home page once you approve it. Owner-only.</div>
+
+        <% if (typeof successMessage !== 'undefined' && successMessage && successMessage.length) { %>
+            <% successMessage.forEach(function(msg) { %>
+                <div class="flash flash-success"><%= msg %></div>
+            <% }) %>
+        <% } %>
+        <% if (typeof errorMessage !== 'undefined' && errorMessage && errorMessage.length) { %>
+            <% errorMessage.forEach(function(msg) { %>
+                <div class="flash flash-error"><%= msg %></div>
+            <% }) %>
+        <% } %>
+
+        <% if (reviews.length === 0) { %>
+            <div class="empty">No reviews yet. Mark a booking as completed and its customer can review it from their order history.</div>
+        <% } %>
+
+        <% reviews.forEach(function(r) { %>
+            <div class="review is-<%= r.status %>">
+                <div class="review-top">
+                    <div>
+                        <div class="review-name"><%= r.displayName %></div>
+                        <div class="review-meta">
+                            <%= r.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                            · <%= (r.services || []).join(', ') %><%= r.vehicle ? ' · ' + r.vehicle : '' %>
+                            · <a href="/admin/bookings/<%= r.booking %>">View booking</a>
+                        </div>
+                    </div>
+                    <span class="pill is-<%= r.status %>"><%= r.status %></span>
+                </div>
+                <div class="stars" role="img" aria-label="<%= r.rating %> out of 5 stars"><% for (let i = 1; i <= 5; i++) { %><span class="<%= i <= r.rating ? '' : 'off' %>">★</span><% } %></div>
+                <div class="review-text <%= r.text ? '' : 'none' %>"><%= r.text || 'No written comment — rating only.' %></div>
+
+                <div class="review-actions">
+                    <% if (r.status !== 'approved') { %>
+                        <form method="POST" action="/admin/reviews/<%= r._id %>/status">
+                            <input type="hidden" name="status" value="approved">
+                            <button type="submit" class="btn-primary">Approve</button>
+                        </form>
+                    <% } %>
+                    <% if (r.status !== 'hidden') { %>
+                        <form method="POST" action="/admin/reviews/<%= r._id %>/status">
+                            <input type="hidden" name="status" value="hidden">
+                            <button type="submit" class="btn-ghost"><%= r.status === 'approved' ? 'Unpublish' : 'Hide' %></button>
+                        </form>
+                    <% } %>
+                    <form method="POST" action="/admin/reviews/<%= r._id %>/delete" data-confirm="Delete this review permanently? The customer will be able to write a new one for that booking.">
+                        <button type="submit" class="btn-danger">Delete</button>
+                    </form>
+                </div>
+            </div>
+        <% }) %>
+    </div>
+
+    <script>
+        document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!window.confirm(form.dataset.confirm)) event.preventDefault();
+            });
+        });
+    </script>
+</body>
+</html>

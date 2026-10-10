@@ -26,17 +26,9 @@ const state = {
 
 // ── SERVICE OPTIONS BY CATEGORY (Step 3 checkbox list) ──
 const serviceOptions = {
-    Detailing: [
-        { name: 'Basic Wash', price: 'From $45', desc: 'Exterior hand wash, tire shine, window cleaning' },
-        { name: 'Interior Detail', price: 'From $120', desc: 'Deep clean, steam cleaning, odor treatment' },
-        { name: 'Exterior Detail', price: 'From $130', desc: 'Clay bar, wax/sealant, tire & trim shine' },
-        { name: 'Full Detail', price: 'From $200', desc: 'Complete interior + exterior + paint decon' },
-        { name: 'Ceramic Coating', price: 'From $499', desc: '1-year protection, high gloss, hydrophobic finish' },
-        { name: 'Paint Decontamination', price: 'Custom quote', desc: 'Iron fallout removal, clay treatment' },
-        { name: 'Bronze Package', price: '$225', desc: 'Full detail + interior protection' },
-        { name: 'Gold Package', price: '$549', desc: 'Full detail + ceramic tint + premium oil change' },
-        { name: 'Ultimate Package', price: '$799+', desc: 'Ceramic coating, ceramic tint, premium oil change, tire rotation' },
-    ],
+    // Names, prices and descriptions come from detailingCatalog.js so the
+    // checkbox list and the configurator can never disagree.
+    Detailing: getDetailingServiceOptions(),
     Tint: [
         { name: 'Standard Window Tint', price: 'From $180', desc: 'All side & rear windows' },
         { name: 'Carbon Tint', price: 'From $250', desc: 'Heat reduction, carbon film finish' },
@@ -256,6 +248,11 @@ function selectLocation(loc, el) {
 // ── BUILD SERVICE OPTIONS (Step 3 checkbox grid) ──
 function buildServiceOptions() {
     const grid = document.getElementById('serviceOptionsGrid');
+    // Detailing prices depend on the vehicle's size, so the list is rebuilt
+    // for the selected vehicle each time (exact prices, not "From" prices).
+    if (state.category === 'Detailing') {
+        serviceOptions.Detailing = getDetailingServiceOptions(getVehicleSizeClass());
+    }
     const options = serviceOptions[state.category] || [];
     document.getElementById('step3-title').textContent = state.category + ' Services';
 
@@ -273,7 +270,16 @@ function buildServiceOptions() {
         // oil change options. A premium-oil requirement only disables the
         // budget "Oil Change" option — "Premium Oil Change" still works.
         let disabledReason = null;
-        if (isOilChangeOption && oilBlockCheck.blocked) {
+        let disabledPrefix = 'Not available for this vehicle — ';
+        if (state.category === 'Detailing') {
+            // Overlap rules (e.g. Full Detail already includes Interior
+            // Detail) and packages that bundle a blocked oil change.
+            const block = getDetailingBlock(o.name);
+            if (block) {
+                disabledReason = block.reason;
+                if (!block.vehicleRelated) disabledPrefix = '';
+            }
+        } else if (isOilChangeOption && oilBlockCheck.blocked) {
             disabledReason = oilBlockCheck.reason;
         } else if (o.name === 'Oil Change' && requiresPremiumOil) {
             disabledReason = 'This vehicle requires full synthetic / synthetic blend oil — select "Premium Oil Change" instead.';
@@ -297,7 +303,7 @@ function buildServiceOptions() {
           <div class="service-option-name">${o.name}</div>
           <div class="service-option-price">${o.price}</div>
           <div class="service-option-desc">${o.desc}</div>
-          ${isDisabled ? `<div class="service-option-blocked-note">Not available for this vehicle — ${disabledReason}</div>` : ''}
+          ${isDisabled ? `<div class="service-option-blocked-note">${disabledPrefix}${disabledReason}</div>` : ''}
         </div>
       </div>
     `;
@@ -313,12 +319,20 @@ function toggleService(idx, el) {
 
     if (el.classList.contains('selected')) {
         state.services.push(name);
+        if (state.category === 'Detailing') onDetailingServiceSelected(name);
     } else {
         state.services = state.services.filter(s => s !== name);
         delete state.selectedParts[name];
     }
 
-    refreshConfiguratorAndEstimate();
+    if (state.category === 'Detailing') {
+        // Selecting one detailing service can disable or swap out others,
+        // so the whole grid is rebuilt (which also refreshes the
+        // configurator + estimate).
+        buildServiceOptions();
+    } else {
+        refreshConfiguratorAndEstimate();
+    }
     updateSidebar();
 }
 
@@ -386,6 +400,11 @@ function updateSidebar() {
 function updateSidebarServiceData() {
     const el = document.getElementById('sb-tools-val');
     if (!el) return;
+
+    if (state.category === 'Detailing' && state.services.length > 0) {
+        el.textContent = getDetailingSidebarText();
+        return;
+    }
 
     if (state.category !== 'Automotive' || state.services.length === 0) {
         el.textContent = 'Vehicle-specific tools will appear after selection.';
@@ -471,10 +490,12 @@ function validateStep(n) {
         if (state.services.length === 0) {
             ok = false;
             alert('Please select at least one service.');
-        } else if (state.category === 'Automotive') {
-            // Make sure every selected automotive service has its required
+        } else if (categoryHasEstimate(state.category)) {
+            // Make sure every selected service has its required
             // configurator options filled in before moving on.
-            const incomplete = state.services.filter(name => !isServiceConfigComplete(name));
+            const incomplete = state.category === 'Detailing'
+                ? getDetailingIncomplete()
+                : state.services.filter(name => !isServiceConfigComplete(name));
             if (incomplete.length > 0) {
                 ok = false;
                 alert(`Please finish configuring: ${incomplete.join(', ')}`);
@@ -618,15 +639,19 @@ function buildConfirmSummary() {
       </div>
     `;
 
+    // Recompute first so the invoice reflects the current discount code
+    // even if services changed since it was applied.
+    refreshConfiguratorAndEstimate();
     buildInvoicePreview();
+    renderDiscountBox();
 }
 
-// ── INVOICE PREVIEW (Step 6, Automotive only) ──
+// ── INVOICE PREVIEW (Step 6, Automotive + Detailing) ──
 function buildInvoicePreview() {
     const el = document.getElementById('invoicePreview');
     if (!el) return;
 
-    if (state.category !== 'Automotive' || !state.lastEstimate) {
+    if (!categoryHasEstimate(state.category) || !state.lastEstimate) {
         el.innerHTML = '';
         el.style.display = 'none';
         return;
@@ -648,7 +673,7 @@ function buildInvoicePreview() {
         rows += `
             <div class="confirm-row">
                 <span class="confirm-row-key">${li.label}</span>
-                <span class="confirm-row-val">$${li.cost.toFixed(2)}</span>
+                <span class="confirm-row-val">${formatEstimateLinePrice(li)}</span>
             </div>
         `;
     });
@@ -660,14 +685,20 @@ function buildInvoicePreview() {
             <span class="confirm-row-key">Subtotal</span>
             <span class="confirm-row-val">$${estimate.subtotal.toFixed(2)}</span>
         </div>
+        ${estimate.discountAmount > 0 ? `<div class="confirm-row">
+            <span class="confirm-row-key">Discount (${estimate.discount.code} — ${estimate.discount.label})</span>
+            <span class="confirm-row-val" style="color:#4ADE80">−$${estimate.discountAmount.toFixed(2)}</span>
+        </div>` : ''}
         <div class="confirm-row">
             <span class="confirm-row-key">Tax (7%)</span>
             <span class="confirm-row-val">$${estimate.tax.toFixed(2)}</span>
         </div>
         <div class="confirm-row" style="font-weight:700;font-size:16px">
             <span class="confirm-row-key">Total Estimate</span>
-            <span class="confirm-row-val">$${estimate.total.toFixed(2)}</span>
+            <span class="confirm-row-val">${formatEstimateTotal(estimate)}</span>
         </div>
+        ${estimate.kind === 'detailing' ? `<div class="confirm-row"><span class="confirm-row-key">Time on site</span><span class="confirm-row-val">${formatDetailingDuration(estimate.totalHours)}</span></div>` : ''}
+        ${estimate.hasQuoteItems ? '<p style="font-size:12px;color:var(--silver-dim);margin-top:10px">Quoted items aren\'t in this total — we\'ll price them on site before any work starts.</p>' : ''}
         ${estimate.vehicle.isEstimateSpecs ? '<p style="font-size:12px;color:var(--silver-dim);margin-top:10px">Some figures are estimated — final pricing confirmed on site.</p>' : ''}
     `;
 
@@ -683,7 +714,8 @@ function buildBookingSubmission() {
             make: state.selectedMake,
             model: state.selectedModel,
             year: state.selectedYear,
-            vehicleType: document.getElementById('vehicleTypeVIN').value
+            // Not asked any more — taken from the model's size class in vehicle-data.js.
+            vehicleType: dtSizeLabel(getVehicleSizeClass())
         }
         : {
             vinMode,
@@ -700,13 +732,14 @@ function buildBookingSubmission() {
         vehicle.isEstimateSpecs = state.lastEstimate.vehicle.isEstimateSpecs;
     }
 
-    const isAutomotive = state.category === 'Automotive';
-    const adminPayload = isAutomotive ? (state.adminPayload || buildAdminPayload()) : null;
+    const hasEstimate = categoryHasEstimate(state.category);
+    const adminPayload = hasEstimate ? (state.adminPayload || buildAdminPayload()) : null;
 
     return {
         vehicle,
         category: state.category,
         services: state.services,
+        discountCode: state.discount ? state.discount.code : '',
         selections: state.selectedParts,
         serviceNotes: adminPayload?.serviceNotes || {},
         parts: adminPayload?.parts || [],
@@ -754,6 +787,18 @@ async function submitBooking() {
 
         if (!res.ok) {
             const errBody = await res.json().catch(() => ({}));
+            if (errBody.discountInvalid) {
+                // The code stopped being valid between "Apply" and submit
+                // (expired, hit its limit…). Drop it, show the real
+                // price, and let the customer decide whether to continue.
+                removeDiscountCode(`${errBody.error} It's been removed — check the updated total, then confirm again.`);
+                document.getElementById('discountBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = btn.dataset.originalText;
+                }
+                return;
+            }
             throw new Error(errBody.error || 'Submission failed');
         }
 

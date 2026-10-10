@@ -4,6 +4,44 @@ const User = require('../models/User')
 const Booking = require('../models/Booking')
 const axios = require('axios')
 const VehicleSpec = require('../models/VehicleSpec')
+const DiscountCode = require('../models/DiscountCode')
+
+// Shape of the pricing a booking-in-progress sends, reduced to what a
+// discount check needs. subtotal is null for categories with no online
+// pricing (Tint) — percent/fixed codes are then applied to the quote.
+function discountContext(b) {
+    const subtotal = (b.pricing && typeof b.pricing.subtotal === 'number') ? b.pricing.subtotal : null
+    return {
+        category: b.category,
+        subtotal,
+        firstTimeCustomer: !!b.firstTimeCustomer,
+        phone: b.contact?.phone
+    }
+}
+
+// The tax rate a submitted estimate was built with. Sent explicitly by
+// the booking form; derived from the figures as a fallback so a missing
+// field can never silently zero out the tax.
+function taxRateOf(pricing) {
+    if (typeof pricing.taxRate === 'number') return pricing.taxRate
+    const taxedBase = (pricing.subtotal || 0) - (pricing.discount || 0)
+    return taxedBase > 0 ? (pricing.tax || 0) / taxedBase : 0
+}
+
+// --- Public: check a discount code from the booking form's Review step ---
+// Read-only: a use is only claimed when the booking is actually submitted.
+router.post('/discount/validate', async (req, res) => {
+    try {
+        const b = req.body || {}
+        const ctx = discountContext(b)
+        const result = await DiscountCode.check(b.code, ctx)
+        if (!result.ok) return res.json({ valid: false, message: result.message })
+        res.json({ valid: true, discount: result.doc.toPublic() })
+    } catch (err) {
+        console.error('Discount validate failed:', err)
+        res.status(500).json({ valid: false, message: 'Could not check that code right now. Please try again.' })
+    }
+})
 
 // --- Home route ---
 router.get('/vin/:vin', async (req, res) => {
@@ -77,26 +115,69 @@ router.post('/booking', async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields', missing })
         }
 
-        const booking = await Booking.create({
-            vehicle: b.vehicle,
-            category: b.category,
-            services: b.services,
-            selections: b.selections,
-            serviceNotes: b.serviceNotes,
-            parts: b.parts,
-            labor: b.labor,
-            toolsNeeded: b.toolsNeeded,
-            pricing: b.pricing,
-            flags: b.flags,
-            locationType: b.locationType,
-            serviceAddress: b.serviceAddress,
-            preferredDate: b.preferredDate,
-            preferredTime: b.preferredTime,
-            firstTimeCustomer: b.firstTimeCustomer,
-            contact: b.contact,
-            notes: b.notes,
-            hearAbout: b.hearAbout
-        })
+        // Discount: re-checked and claimed here, never trusted from the
+        // client. The dollar amount is recomputed from the code's own
+        // rules and the totals are rebuilt around it.
+        let discountDoc = null
+        let discount
+        let pricing = b.pricing
+        if (b.discountCode) {
+            const ctx = discountContext(b)
+            const result = await DiscountCode.redeem(b.discountCode, ctx)
+            if (!result.ok) {
+                return res.status(409).json({ error: result.message, discountInvalid: true })
+            }
+            discountDoc = result.doc
+            const amount = ctx.subtotal != null ? discountDoc.amountFor(ctx.subtotal) : null
+            discount = {
+                code: discountDoc.code,
+                type: discountDoc.type,
+                value: discountDoc.value,
+                label: discountDoc.label(),
+                amount
+            }
+            if (amount != null) {
+                const taxRate = taxRateOf(pricing)
+                const tax = (ctx.subtotal - amount) * taxRate
+                pricing = { ...pricing, discount: amount, tax, total: ctx.subtotal - amount + tax }
+            }
+        } else if (pricing && pricing.discount) {
+            // A discount amount with no code behind it is not a discount.
+            const taxRate = taxRateOf(pricing)
+            const tax = pricing.subtotal * taxRate
+            pricing = { ...pricing, discount: 0, tax, total: pricing.subtotal + tax }
+        }
+
+        let booking
+        try {
+            booking = await Booking.create({
+                discount,
+                vehicle: b.vehicle,
+                category: b.category,
+                services: b.services,
+                selections: b.selections,
+                serviceNotes: b.serviceNotes,
+                parts: b.parts,
+                labor: b.labor,
+                toolsNeeded: b.toolsNeeded,
+                pricing,
+                flags: b.flags,
+                locationType: b.locationType,
+                serviceAddress: b.serviceAddress,
+                preferredDate: b.preferredDate,
+                preferredTime: b.preferredTime,
+                firstTimeCustomer: b.firstTimeCustomer,
+                contact: b.contact,
+                notes: b.notes,
+                hearAbout: b.hearAbout,
+                // Logged-in customers get the booking in their order history.
+                user: req.user ? req.user._id : null
+            })
+        } catch (err) {
+            // Booking didn't save — give the claimed use back.
+            if (discountDoc) await DiscountCode.release(discountDoc._id)
+            throw err
+        }
 
         res.status(201).json({ success: true, bookingId: booking._id })
 

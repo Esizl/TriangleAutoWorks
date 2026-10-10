@@ -1761,3 +1761,138 @@ nav {
         grid-column: auto;
     }
 }
+
+/* ── DETAILING CONFIGURATOR (Step 3) ── */
+.dt-includes {
+    font-size: 12px;
+    color: var(--silver-dim);
+    margin: -6px 0 14px;
+    line-height: 1.5;
+}
+
+.dt-addon-list {
+    display: grid;
+    gap: 8px;
+}
+
+.field .dt-addon {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    cursor: pointer;
+    /* override .field label's uppercase eyebrow styling */
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--text);
+}
+
+.field .dt-addon:hover,
+.field .dt-addon:has(input:checked) {
+    border-color: rgba(200, 16, 46, 0.5);
+}
+
+.field .dt-addon input {
+    /* undo the full-width text-input styling from .field input */
+    appearance: auto;
+    -webkit-appearance: auto;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    flex-shrink: 0;
+    accent-color: var(--red);
+}
+
+.dt-addon-name {
+    flex: 1;
+    min-width: 0;
+}
+
+.dt-addon-price {
+    color: var(--red);
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+/* ── DISCOUNT CODE (Step 6) ── */
+.discount-box {
+    margin: 24px 0;
+    padding: 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+}
+
+.discount-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--silver-dim);
+    margin-bottom: 10px;
+}
+
+.discount-row {
+    display: flex;
+    gap: 10px;
+}
+
+.discount-row input {
+    flex: 1;
+    min-width: 0;
+    background: var(--black);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--white);
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 12px 14px;
+    outline: none;
+}
+
+.discount-row input::placeholder {
+    color: var(--silver-dim);
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.discount-row input:focus {
+    border-color: rgba(200, 16, 46, 0.5);
+}
+
+.discount-row input:disabled {
+    opacity: 0.7;
+}
+
+.discount-status {
+    font-size: 13px;
+    color: var(--silver-dim);
+    margin-top: 10px;
+    line-height: 1.5;
+}
+
+.discount-status:empty {
+    display: none;
+}
+
+.discount-status.is-applied {
+    color: #4ADE80;
+}
+
+.discount-status.is-error {
+    color: #E8B339;
+}
+
+.estimate-line-item.estimate-discount .estimate-line-price {
+    color: #4ADE80;
+}
