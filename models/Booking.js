@@ -104,6 +104,9 @@ const BookingSchema = new mongoose.Schema({
     // Set when the booking was made while logged in; null for guests.
     // Drives Account → Order History and who may review the booking.
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null, index: true },
+    // Last 10 digits of contact.phone, set automatically on save. Lets a
+    // GUEST booking show up for an account with the same phone number.
+    phoneKey: { type: String, default: '', index: true },
 
     // ── Admin workflow ──
     status: {
@@ -117,6 +120,29 @@ const BookingSchema = new mongoose.Schema({
         default: () => estDate.toLocaleString('en-US', { timeZone: 'America/New_York' })
     }
 })
+
+/** "(919) 555-0100" / "+1 919 555 0100" -> "9195550100"; '' if there aren't 10 digits. */
+function phoneKeyOf(phone) {
+    const digits = String(phone || '').replace(/\D/g, '')
+    return digits.length >= 10 ? digits.slice(-10) : ''
+}
+
+BookingSchema.pre('validate', function () {
+    this.phoneKey = phoneKeyOf(this.contact && this.contact.phone)
+})
+
+/**
+ * Mongo filter for "this account's bookings": ones made while logged in,
+ * plus guest bookings whose phone number matches the account's.
+ * Phone numbers aren't verified, so a guest match is weaker proof of
+ * ownership than a logged-in booking — the order history page hides the
+ * street address on guest matches for that reason.
+ */
+BookingSchema.statics.accountFilter = function (user) {
+    const own = { user: user._id }
+    const key = phoneKeyOf(user.phone)
+    return key ? { $or: [own, { user: null, phoneKey: key }] } : own
+}
 
 const Booking = mongoose.model('Booking', BookingSchema)
 

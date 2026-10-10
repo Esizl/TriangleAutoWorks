@@ -209,7 +209,7 @@
 
         <% if (bookings.length === 0) { %>
             <div class="empty">
-                No bookings on this account yet. Bookings made while you're logged in show up here.<br>
+                No bookings on this account yet. Bookings made while you're logged in, or as a guest with your account's phone number, show up here.<br>
                 <a href="/booking">Book a service</a>
             </div>
         <% } %>
@@ -234,9 +234,11 @@
                         <span class="order-row-key">Appointment</span>
                         <span class="order-row-val"><%= formatDate(b.preferredDate) %> · <%= b.preferredTime %></span>
                     </div>
+                    <%# Guest bookings are matched by phone number, which isn't verified,
+                        so the street address is only shown on bookings made logged in. %>
                     <div class="order-row">
                         <span class="order-row-key">Location</span>
-                        <span class="order-row-val"><%= b.serviceAddress %></span>
+                        <span class="order-row-val"><%= b.user ? b.serviceAddress : 'Booked as a guest with your phone number' %></span>
                     </div>
                     <% if (b.discount && b.discount.code) { %>
                         <div class="order-row">
@@ -267,8 +269,9 @@
                     <div class="review-box">
                         <div class="review-label">How did we do?</div>
                         <form method="POST" action="/account/orders/<%= b._id %>/review" class="review-form">
-                            <fieldset class="star-picker">
-                                <legend style="position:absolute;opacity:0">Star rating</legend>
+                            <%# Named with aria-label rather than a <legend>: an invisible legend
+                                sat on top of the 4th and 5th stars and swallowed their clicks. %>
+                            <fieldset class="star-picker" aria-label="Star rating">
                                 <% for (let i = 5; i >= 1; i--) { %>
                                     <input type="radio" name="rating" id="star-<%= b._id %>-<%= i %>" value="<%= i %>" required>
                                     <label for="star-<%= b._id %>-<%= i %>" title="<%= i %> star<%= i === 1 ? '' : 's' %>" aria-label="<%= i %> star<%= i === 1 ? '' : 's' %>">★</label>

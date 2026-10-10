@@ -3,11 +3,12 @@ const { ensureAuthenticated } = require('../config/ensureAuth')
 const Booking = require('../models/Booking')
 const Review = require('../models/Review')
 
-// --- Order history: every booking made while logged in to this account ---
+// --- Order history: bookings made while logged in, plus guest bookings
+// --- made with this account's phone number (see Booking.accountFilter) ---
 router.get('/orders', ensureAuthenticated, async (req, res) => {
     try {
         const [bookings, reviews] = await Promise.all([
-            Booking.find({ user: req.user._id }).sort({ _id: -1 }),
+            Booking.find(Booking.accountFilter(req.user)).sort({ _id: -1 }),
             Review.find({ user: req.user._id })
         ])
 
@@ -41,8 +42,8 @@ router.post('/orders/:id/review', ensureAuthenticated, async (req, res) => {
             return res.redirect('/account/orders')
         }
 
-        // Scoped to the logged-in user, so nobody can review someone else's booking.
-        const booking = await Booking.findOne({ _id: req.params.id, user: req.user._id })
+        // Scoped to this account's bookings, so nobody can review someone else's.
+        const booking = await Booking.findOne({ _id: req.params.id, ...Booking.accountFilter(req.user) })
         if (!booking) {
             req.flash('errorMessage', 'Booking not found.')
             return res.redirect('/account/orders')
