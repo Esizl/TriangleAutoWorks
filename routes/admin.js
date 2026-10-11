@@ -82,7 +82,6 @@ router.get('/bookings', ensureAdmin, async (req, res) => {
         const { status } = req.query
         const filter = (status && status !== 'all') ? { status } : {}
         const bookings = await Booking.find(filter).sort({ createdAt: -1 })
-        console.log(bookings)
         res.render('admin/bookings', { bookings, currentStatus: status || 'all' })
     } catch (err) {
         console.error(err)

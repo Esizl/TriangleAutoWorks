@@ -305,7 +305,7 @@
                     <%= user.role >= 3 ? 'Owner' : user.role === 2 ? 'Staff' : 'Customer' %>
                 </span>
             </div>
-            <form method="POST" action="/updateProfile">
+            <form method="POST" action="/settings/profile">
                 <div class="field-group">
                     <div class="field">
                         <label>Name</label>
@@ -333,7 +333,7 @@
         <div class="panel">
             <div class="panel-title">Password</div>
             <div class="panel-sub">Change the password used to sign in.</div>
-            <form method="POST" action="/changePassword">
+            <form method="POST" action="/settings/password">
                 <div class="field-group">
                     <div class="field">
                         <label>Current Password</label>
@@ -346,7 +346,7 @@
                     </div>
                     <div class="field">
                         <label>Confirm New Password</label>
-                        <input type="password" name="confirmPassword" required minlength="6">
+                        <input type="password" name="newPassword2" required minlength="6">
                     </div>
                 </div>
                 <button type="submit" class="btn-primary">Update Password</button>

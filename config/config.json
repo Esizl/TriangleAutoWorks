@@ -1,13 +1,13 @@
 {
   "email": {
-        "resendApiKey": "re_CnhWf7pQ_CCc8Gi3fceTrFzRpVraetX4p",
+        "resendApiKey": "re_Ut2jmabN_NxiGFA77uK4bb7NGVuvoAQcc",
         "from": "Triangle Auto Works <no-reply@triangleautowork.com>",
         "appUrl": "http://localhost:8080"
     },
     "server": {
     "mongoUri": "mongodb+srv://Esizl:jp0qcs1735VQTSGY@cluster0.8oucz.mongodb.net/infinitum?retryWrites=true&w=majority&appName=triangleautoworks",
     "port": 8080,
-    "version": "0.1.151"
+    "version": "0.1.16"
   },
   "webauthn": {
     "rpID": "triangleautowork.com",

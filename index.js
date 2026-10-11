@@ -1,3 +1,10 @@
+// Load a local .env file (if there is one) into process.env before anything
+// reads settings. Built into Node 20.12+, so no package is needed. Railway
+// has no .env file and supplies its variables directly.
+if (typeof process.loadEnvFile === 'function' && require('fs').existsSync('.env')) {
+    process.loadEnvFile('.env')
+}
+
 const express = require('express')
 const app = express()
 const mongoose = require('mongoose')
@@ -5,7 +12,15 @@ const flash = require('connect-flash')
 const session = require('express-session')
 const passport = require('passport')
 require('./config/passport')(passport)
-const { port, mongoUri, version } = require('./config/config.json').server
+const crypto = require('crypto')
+const { port, mongoUri, version, sessionSecret: configuredSessionSecret } = require('./config/config.json').server
+
+// Login cookies are signed with this secret, so it must be private and
+// hard to guess. Set SESSION_SECRET (or server.sessionSecret in
+// config/config.json) to a long random string. With neither set, a random
+// one is generated at startup: still safe, but everyone is logged out on
+// each restart.
+const sessionSecret = process.env.SESSION_SECRET || configuredSessionSecret || crypto.randomBytes(32).toString('hex')
 
 mongoose.connect(mongoUri)
     .then(() => console.log('Database: Connected'))
@@ -23,9 +38,11 @@ app.use(express.static('public'))
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 app.use(session({
-    secret: 'secret12345',
+    secret: sessionSecret,
     resave: true,
-    saveUninitialized: true
+    saveUninitialized: true,
+    // Don't send the login cookie on form posts coming from other sites.
+    cookie: { sameSite: 'lax' }
 }))
 app.use(passport.initialize())
 app.use(passport.session())
@@ -54,6 +71,9 @@ try {
     app.listen(process.env.PORT || port)
     console.clear()
     console.log(`Server: Online\nPort: ${port}\nVersion: ${version}`)
+    if (!process.env.SESSION_SECRET && !configuredSessionSecret) {
+        console.warn('Session secret: not configured, using a random one for this run. Set SESSION_SECRET to keep logins across restarts.')
+    }
 } catch (error) {
     console.clear()
     console.error(`Server: Offline\nPort: N/A\nError: ${error}`)

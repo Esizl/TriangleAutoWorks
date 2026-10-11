@@ -32,7 +32,6 @@ router.post('/signup', async (req, res) => {
         errors.push({ message: 'Passwords must match.' })
     }
 
-    console.log(req.body)
 
     if (errors.length > 0) {
         res.status(200).render('signup', { errors, name, email, password, password2 })
@@ -88,17 +87,6 @@ router.get('/logout', async (req, res, next) => {
     })
 })
 
-// LEDGER
-router.post('/validatePin', (req, res) => {
-    const { pin } = req.body;
-    console.log("ESP32 sent PIN:", pin);
-
-    if (pin === "2107") {
-        res.json({ success: true, message: "PIN accepted" });
-    } else {
-        res.json({ success: false, message: "Invalid PIN" });
-    }
-})
 
 
 module.exports = router
