@@ -25,6 +25,11 @@ router.get('/register-options', ensureAuthenticated, async (req, res) => {
         const options = await generateRegistrationOptions({
             rpName,
             rpID,
+            // A fixed ID per account. Without it the library invents a new
+            // random one on every registration, so the device treats each
+            // passkey as belonging to a different person and stacks up
+            // look-alike entries instead of replacing the old one.
+            userID: new TextEncoder().encode(String(user._id)),
             userName: user.email,
             userDisplayName: user.name,
             attestationType: 'none',
@@ -143,7 +148,12 @@ router.post('/login-verify', async (req, res) => {
         const credentialID = req.body.id
         const user = await User.findOne({ 'passkeys.credentialID': credentialID })
         if (!user) {
-            return res.status(400).json({ error: 'Passkey not recognized.' })
+            // unknownCredential lets the login page tell the browser this
+            // passkey is dead, so it can stop offering it.
+            return res.status(400).json({
+                error: 'That passkey is no longer linked to an account. Pick a different one, or log in with your password.',
+                unknownCredential: true
+            })
         }
 
         const passkey = user.passkeys.find(pk => pk.credentialID === credentialID)

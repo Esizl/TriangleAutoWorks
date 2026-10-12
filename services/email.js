@@ -47,15 +47,19 @@ function escapeHtml(value) {
 /**
  * Shared branded layout so every email looks the same.
  * paragraphs: plain-text strings (escaped here). button: { label, url }.
+ * code: a short one-time code, shown large under the paragraphs.
  * Returns { html, text } ready for sendEmail().
  */
-function buildEmail({ heading, paragraphs, button, footnote }) {
+function buildEmail({ heading, paragraphs, code, button, footnote }) {
     const body = paragraphs
         .map(p => `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#333333;">${escapeHtml(p)}</p>`)
         .join('')
     const buttonHtml = button
         ? `<p style="margin:24px 0;"><a href="${escapeHtml(button.url)}" style="display:inline-block;background:#C8102E;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;padding:14px 28px;border-radius:2px;">${escapeHtml(button.label)}</a></p>
            <p style="margin:0 0 16px;font-size:13px;line-height:1.6;color:#666666;">Or paste this link into your browser:<br><a href="${escapeHtml(button.url)}" style="color:#C8102E;word-break:break-all;">${escapeHtml(button.url)}</a></p>`
+        : ''
+    const codeHtml = code
+        ? `<p style="margin:24px 0;font-size:34px;font-weight:bold;letter-spacing:8px;color:#111111;font-family:'Courier New',Courier,monospace;">${escapeHtml(code)}</p>`
         : ''
     const footnoteHtml = footnote
         ? `<p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#666666;">${escapeHtml(footnote)}</p>`
@@ -69,6 +73,7 @@ function buildEmail({ heading, paragraphs, button, footnote }) {
       <div style="font-size:13px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#C8102E;">Triangle Auto Works</div>
       <h1 style="margin:10px 0 20px;font-size:24px;line-height:1.2;color:#111111;">${escapeHtml(heading)}</h1>
       ${body}
+      ${codeHtml}
       ${buttonHtml}
       ${footnoteHtml}
     </div>
@@ -81,6 +86,7 @@ function buildEmail({ heading, paragraphs, button, footnote }) {
         heading,
         '',
         ...paragraphs,
+        ...(code ? ['', code] : []),
         ...(button ? ['', `${button.label}: ${button.url}`] : []),
         ...(footnote ? ['', footnote] : []),
         '',

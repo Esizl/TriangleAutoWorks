@@ -527,7 +527,7 @@ router.post('/site/specs/new', ensureAdmin, ensureOwner, async (req, res) => {
         }
 
         await VehicleSpec.create(spec)
-        req.flash('successMessage', `Created spec entry for ${spec.make} ${spec.model}${spec.year ? ' ' + spec.year : ' (model default)'}.`)
+        req.flash('successMessage', `Created spec entry for ${spec.make} ${spec.model}${spec.year ? ' ' + spec.year + (spec.yearEnd ? '–' + spec.yearEnd : '') : ' (model default)'}.`)
         res.redirect('/admin/site/specs')
     } catch (err) {
         console.error(err)
@@ -561,6 +561,9 @@ router.get('/site/specs/:id/edit', ensureAdmin, ensureOwner, async (req, res) =>
 router.post('/site/specs/:id', ensureAdmin, ensureOwner, async (req, res) => {
     try {
         const updates = buildSpecFromBody(req.body)
+        // Saving from this form means the owner has looked the figures
+        // over, so a seeded "unverified" entry becomes a real one.
+        updates.verified = true
         await VehicleSpec.findByIdAndUpdate(req.params.id, updates)
         req.flash('successMessage', 'Spec entry updated.')
         res.redirect('/admin/site/specs')
@@ -595,10 +598,15 @@ function buildSpecFromBody(body) {
         .map(s => s.trim())
         .filter(Boolean)
 
+    const year = body.year && body.year.trim() ? parseInt(body.year, 10) : null
+    const throughYear = body.yearEnd && body.yearEnd.trim() ? parseInt(body.yearEnd, 10) : null
+
     return {
         make: body.make,
         model: body.model,
-        year: body.year && body.year.trim() ? parseInt(body.year, 10) : null,
+        year,
+        // Last year of a run of years (only meaningful after a start year).
+        yearEnd: (year && throughYear && throughYear > year) ? throughYear : null,
         oil: {
             viscosity: body.oilViscosity || null,
             capacity: body.oilCapacity ? parseFloat(body.oilCapacity) : null

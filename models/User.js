@@ -56,6 +56,47 @@ const UserSchema = new mongoose.Schema({
     }
 })
 
+// ── One account per email and per phone number ──
+// Emails and phones are stored as typed, so every comparison here ignores
+// formatting: "Me@Mail.com" = "me@mail.com", and "(919) 555-0100" =
+// "919-555-0100" = "+1 919 555 0100" (last 10 digits).
+
+function escapeRegex(text) {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function emailPattern(email) {
+    return new RegExp(`^${escapeRegex(String(email || '').trim())}$`, 'i')
+}
+
+/** Just the digits of a phone number. */
+UserSchema.statics.phoneDigits = function (phone) {
+    return String(phone || '').replace(/\D/g, '')
+}
+
+/** The account with this email, ignoring upper/lower case. */
+UserSchema.statics.findByEmail = function (email) {
+    return this.findOne({ email: emailPattern(email) })
+}
+
+/** Is this email on an account already? Pass exceptUserId to ignore the user's own account. */
+UserSchema.statics.emailTaken = async function (email, exceptUserId) {
+    const filter = { email: emailPattern(email) }
+    if (exceptUserId) filter._id = { $ne: exceptUserId }
+    return !!(await this.exists(filter))
+}
+
+/** Is this phone number on an account already? Pass exceptUserId to ignore the user's own account. */
+UserSchema.statics.phoneTaken = async function (phone, exceptUserId) {
+    const last10 = this.phoneDigits(phone).slice(-10)
+    if (last10.length < 10) return false
+    // The same 10 digits at the end of the stored number, with any
+    // punctuation or spaces between them.
+    const filter = { phone: new RegExp(last10.split('').join('\\D*') + '\\D*$') }
+    if (exceptUserId) filter._id = { $ne: exceptUserId }
+    return !!(await this.exists(filter))
+}
+
 const User = mongoose.model('User', UserSchema)
 
 module.exports = User

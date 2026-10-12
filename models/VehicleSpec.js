@@ -16,6 +16,21 @@ const VehicleSpecSchema = new mongoose.Schema({
         type: Number,
         default: null
     },
+    // Optional last year of a run: an entry with year 2016 and yearEnd 2021
+    // covers 2016 through 2021. null = the entry is for `year` only. An
+    // entry for one exact year always wins over a run that includes it.
+    yearEnd: {
+        type: Number,
+        default: null
+    },
+    // false = starting figures nobody has checked against the vehicle or
+    // its manual yet (see scripts/seedVehicleSpecEstimates.js). The booking
+    // form keeps showing the "Estimated" flag for these. Saving an entry
+    // in the admin panel marks it verified.
+    verified: {
+        type: Boolean,
+        default: true
+    },
 
     oil: {
         viscosity: { type: String, default: null },

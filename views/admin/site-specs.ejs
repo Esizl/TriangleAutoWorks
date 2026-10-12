@@ -154,6 +154,7 @@
         }
         .year-badge.default { background: var(--blue-soft); color: var(--blue); }
         .year-badge.override { background: var(--amber-soft); color: var(--amber); }
+        .year-badge.unverified { background: var(--red-soft); color: var(--red); }
 
         .row-actions {
             display: flex;
@@ -222,7 +223,7 @@
             <h1>Vehicle Specs</h1>
             <a href="/admin/site/specs/new" class="btn-new">+ New entry</a>
         </div>
-        <div class="page-sub">Oil capacity, filter specs, tools, and labor time per vehicle. Owner-only — these specs guide real repair jobs.</div>
+        <div class="page-sub">Oil capacity, filter specs, tools, and labor time per vehicle. Owner-only — these specs guide real repair jobs. Entries marked Unverified are starting figures: quotes built from them still show as estimated until you open the entry, check it, and save.</div>
 
         <% if (typeof successMessage !== 'undefined' && successMessage && successMessage.length) { %>
             <% successMessage.forEach(function(msg) { %>
@@ -240,7 +241,7 @@
         <% } else { %>
             <div class="card-list">
                 <% specs.forEach(function(s) { %>
-                    <% const deleteMsg = 'Delete the spec entry for ' + s.make + ' ' + s.model + (s.year ? ' ' + s.year : ' (model default)') + '? This cannot be undone.'; %>
+                    <% const deleteMsg = 'Delete the spec entry for ' + s.make + ' ' + s.model + (s.year ? ' ' + s.year + (s.yearEnd ? '–' + s.yearEnd : '') : ' (model default)') + '? This cannot be undone.'; %>
                     <div class="spec-row">
                         <span class="spec-main">
                             <div class="spec-title"><%= s.make %> <%= s.model %></div>
@@ -249,8 +250,11 @@
                             </div>
                         </span>
                         <span class="year-badge <%= s.year ? 'override' : 'default' %>">
-                            <%= s.year ? s.year : 'Model default' %>
+                            <%= s.year ? (s.yearEnd ? s.year + '–' + s.yearEnd : s.year) : 'Model default' %>
                         </span>
+                        <% if (s.verified === false) { %>
+                            <span class="year-badge unverified">Unverified</span>
+                        <% } %>
                         <span class="row-actions">
                             <a href="/admin/site/specs/<%= s._id %>/edit" class="btn-mini">Edit</a>
                             <form method="POST" action="/admin/site/specs/<%= s._id %>/delete" class="confirm-form" data-confirm="<%= deleteMsg %>">

@@ -6,7 +6,8 @@ const User = require('../models/User')
 module.exports = function (passport) {
     passport.use(
         new LocalStrategy({ usernameField: 'email' }, (email, password, done) => {
-            User.findOne({ email: email })
+            // Case-insensitive, to match how signup checks for duplicates.
+            User.findByEmail(email)
                 .then(user => {
                     if (!user) {
                         return done(null, false, { message: 'Email not found.' })

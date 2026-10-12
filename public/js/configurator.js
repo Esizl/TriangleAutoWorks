@@ -68,7 +68,9 @@ const DIAGNOSTIC_STANDALONE_TRIP_CHARGE = 100;
 function resolveVehicleSpecs() {
     const specific = (typeof getVehicleSpecs === "function") ? getVehicleSpecs() : null;
     if (specific && Object.keys(specific).length > 0) {
-        return { ...specific, isEstimate: false };
+        // verified: false = seeded starting figures nobody has checked yet,
+        // so the quote still carries the "Estimated" flag.
+        return { ...specific, isEstimate: specific.verified === false };
     }
     return { ...window.GENERIC_FALLBACK_SPECS };
 }
@@ -183,7 +185,7 @@ function buildConfiguratorHTML() {
             }
 
             const estimateNote = specs.isEstimate
-                ? `<div class="config-estimate-flag">Estimated — not vehicle-specific yet</div>`
+                ? `<div class="config-estimate-flag">${specs.verified === false ? 'Estimated — typical figures for this model, confirmed on site' : 'Estimated — not vehicle-specific yet'}</div>`
                 : '';
             const tierNote = (vehicleRequiredTier === 'premium' && requestedTier !== 'budget')
                 ? `<div class="config-estimate-flag">This vehicle requires full synthetic / synthetic blend oil — budget options aren't shown.</div>`

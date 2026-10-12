@@ -215,65 +215,15 @@ router.patch('/booking/:id/status', ensureAdmin, async (req, res) => {
     }
 })
 
-const GENERIC_FALLBACK_SPECS = {
-    oil: {
-        viscosity: '5W-30',
-        capacity: 5
-    },
-    filter: {
-        brandPartNumber: null,
-        socket: 'Standard wrench/cap'
-    },
-    drainPlug: 'Standard',
-    tires: {
-        size: null
-    },
-    tools: {
-        oilChange: ['Drain Pan', 'Oil Filter Wrench', 'Torque Wrench']
-    },
-    oilChangeLaborMinutes: 20,
-    oilTierOverride: null,
-    isEstimate: true,
-    notes: ''
-}
-
-// --- Resolve vehicle specs: year-specific entry -> model default -> generic fallback ---
-router.get('/vehicle-specs', async (req, res) => {
-    try {
-        const { make, model, year } = req.query
-
-        if (!make || !model) {
-            return res.status(400).json({ error: 'make and model are required' })
-        }
-
-        const yearNum = year ? parseInt(year, 10) : null
-
-        // 1. Look for an exact year-specific entry
-        if (yearNum) {
-            const yearSpec = await VehicleSpec.findOne({ make, model, year: yearNum })
-            if (yearSpec) {
-                return res.json({ ...yearSpec.toObject(), isEstimate: false })
-            }
-        }
-
-        // 2. Fall back to the model-level default (year: null)
-        const modelDefault = await VehicleSpec.findOne({ make, model, year: null })
-        if (modelDefault) {
-            return res.json({ ...modelDefault.toObject(), isEstimate: false })
-        }
-
-        // 3. Fall back to the generic estimate
-        return res.json({ make, model, year: yearNum, ...GENERIC_FALLBACK_SPECS })
-    } catch (err) {
-        console.error('Error resolving vehicle specs:', err)
-        res.status(500).json({ error: 'Failed to resolve vehicle specs' })
-    }
-})
-
 // --- Public: resolve vehicle specs for the booking form ---
-// Year-specific entry wins; falls back to the model-level default
-// (year: null); returns { spec: null } if neither exists so the client
-// falls back to GENERIC_FALLBACK_SPECS.
+// An entry for the exact year wins, then an entry covering a run of years
+// that includes it (year..yearEnd), then the model-level default
+// (year: null). Returns { spec: null } if none exist so the client falls
+// back to GENERIC_FALLBACK_SPECS.
+//
+// (An older copy of this route used to sit above this one and answer
+// first with a different response shape, so the booking form never saw
+// any saved spec and always used the generic fallback. It's gone.)
 router.get('/vehicle-specs', async (req, res) => {
     try {
         const { make, model } = req.query
@@ -285,7 +235,15 @@ router.get('/vehicle-specs', async (req, res) => {
 
         let spec = null
         if (!isNaN(year)) {
-            spec = await VehicleSpec.findOne({ make, model, year }).lean()
+            spec = await VehicleSpec.findOne({ make, model, year, yearEnd: null }).lean()
+            if (!spec) {
+                spec = await VehicleSpec.findOne({
+                    make,
+                    model,
+                    year: { $lte: year },
+                    yearEnd: { $gte: year }
+                }).sort({ year: -1 }).lean()
+            }
         }
         if (!spec) {
             spec = await VehicleSpec.findOne({ make, model, year: null }).lean()

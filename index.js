@@ -59,6 +59,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/', require('./routes/index'))
 app.use('/', require('./routes/password'))
+app.use('/', require('./routes/verify'))
 app.use('/auth', require('./routes/auth'))
 app.use('/api', require('./routes/api'))
 app.use('/api/availability', require('./routes/availability'))

@@ -190,7 +190,10 @@
         </div>
         <div class="page-sub">
             <% if (spec) { %>
-                Editing <%= spec.make %> <%= spec.model %><%= spec.year ? ' ' + spec.year : ' (model default)' %>.
+                Editing <%= spec.make %> <%= spec.model %><%= spec.year ? ' ' + spec.year + (spec.yearEnd ? '–' + spec.yearEnd : '') : ' (model default)' %>.
+                <% if (spec.verified === false) { %>
+                    These are unverified starting figures. Check them against the owner's manual — saving this form marks the entry as verified.
+                <% } %>
             <% } else { %>
                 Leave year blank to set a model-level default that applies to all years unless a specific year has its own entry.
             <% } %>
@@ -244,6 +247,11 @@
                             <input type="hidden" name="year" value="<%= spec.year || '' %>">
                         <% } %>
                         <div class="field-hint">Leave blank for a model-wide default. A specific year fully overrides the default — it does not merge with it.</div>
+                    </div>
+                    <div class="field">
+                        <label>Through Year (optional)</label>
+                        <input type="number" name="yearEnd" min="1900" max="2100" placeholder="e.g. 2021" value="<%= spec && spec.yearEnd ? spec.yearEnd : '' %>">
+                        <div class="field-hint">Fill this in to cover a run of years with one entry — Year 2016 through 2021, for example. An entry for one exact year still wins over a run.</div>
                     </div>
                 </div>
             </div>

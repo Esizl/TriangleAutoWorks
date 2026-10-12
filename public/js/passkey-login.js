@@ -34,6 +34,20 @@
             if (verifyRes.ok && result.verified) {
                 window.location.href = result.redirect || '/';
             } else {
+                // The server doesn't know this passkey (it was removed from
+                // the account). Where the browser supports it, report that
+                // so the device can delete its leftover copy and stop
+                // offering it. Best effort: not every browser/device does.
+                if (result.unknownCredential && PublicKeyCredential.signalUnknownCredential) {
+                    try {
+                        await PublicKeyCredential.signalUnknownCredential({
+                            rpId: options.rpId,
+                            credentialId: authResponse.id
+                        });
+                    } catch (signalErr) {
+                        console.warn('Could not report the unknown passkey to the device:', signalErr);
+                    }
+                }
                 throw new Error(result.error || 'Passkey login failed.');
             }
         } catch (err) {

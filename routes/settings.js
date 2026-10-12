@@ -2,6 +2,8 @@ const router = require('express').Router()
 const bcrypt = require('bcryptjs')
 const { ensureAuthenticated } = require('../config/ensureAuth')
 const User = require('../models/User')
+const verification = require('../services/emailVerification')
+const { isEmailConfigured } = require('../services/email')
 
 // --- Settings page ---
 router.get('/', ensureAuthenticated, async (req, res) => {
@@ -33,23 +35,40 @@ router.post('/profile', ensureAuthenticated, async (req, res) => {
         // has to be checked for manually here — otherwise two accounts
         // could silently end up sharing an email and login would only
         // ever resolve to whichever one User.findOne() returns first.
-        const existing = await User.findOne({ email: email.trim() })
-        if (existing && String(existing._id) !== String(req.user._id)) {
+        if (await User.emailTaken(email, req.user._id)) {
             req.flash('errorMessage', 'That email is already in use by another account.')
             return res.redirect('/settings')
         }
+        // Same rule as signup: one account per phone number.
+        if (await User.phoneTaken(phone, req.user._id)) {
+            req.flash('errorMessage', 'That phone number is already in use by another account.')
+            return res.redirect('/settings')
+        }
 
-        await User.findByIdAndUpdate(req.user._id, {
-            name: name.trim(),
-            email: email.trim(),
-            phone: phone.trim()
-        })
+        const newEmail = email.trim()
+        const emailChanged = newEmail.toLowerCase() !== String(req.user.email).toLowerCase()
+
+        // Name and phone save right away. A different email only takes
+        // effect once the code sent to it is entered (routes/verify.js).
+        const updates = { name: name.trim(), phone: phone.trim() }
+        if (!emailChanged) updates.email = newEmail // same address, maybe different capitals
+        await User.findByIdAndUpdate(req.user._id, updates)
+
+        if (emailChanged) {
+            if (!isEmailConfigured()) {
+                console.error('[settings] Email is not configured — set RESEND_API_KEY and EMAIL_FROM. Email changes are blocked until it is.')
+                req.flash('errorMessage', "Your name and phone were saved, but changing your email isn't available right now.")
+                return res.redirect('/settings')
+            }
+            await verification.start(req, { purpose: 'email-change', email: newEmail, user: req.user._id })
+            return res.redirect('/verify-email')
+        }
 
         req.flash('successMessage', 'Profile updated.')
         res.redirect('/settings')
     } catch (err) {
         console.error('Error updating profile:', err)
-        req.flash('errorMessage', 'Something went wrong updating your profile.')
+        req.flash('errorMessage', err.userMessage || 'Something went wrong updating your profile.')
         res.redirect('/settings')
     }
 })

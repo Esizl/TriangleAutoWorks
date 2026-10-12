@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your Email — Triangle Auto Works</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/css/booking.css">
+    <link rel="stylesheet" href="/css/auth.css">
+</head>
+
+<body>
+
+    <nav>
+        <a href="/" class="nav-logo">
+            <svg width="36" height="36" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"
+                style="margin-right:0">
+                <polygon points="20,2 38,36 2,36" fill="none" stroke="#C8102E" stroke-width="2.5" />
+                <text x="20" y="32" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="18"
+                    fill="#C0C0C0">TA</text>
+            </svg>
+            <div class="nav-wordmark" style="margin-left:10px">
+                Triangle
+                <span>Auto Works</span>
+            </div>
+        </a>
+        <a href="<%= startPage %>" class="nav-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back
+        </a>
+    </nav>
+
+    <div class="auth-layout">
+        <div class="auth-card">
+
+            <div class="step-eyebrow">Account</div>
+            <h2 class="step-title">Check Your Email</h2>
+            <div class="red-rule"></div>
+
+            <% if (typeof successMessage !== 'undefined' && successMessage && successMessage.length > 0) { %>
+                <% successMessage.forEach(function (msg) { %>
+                    <div class="auth-success-banner"><%= msg %></div>
+                <% }) %>
+            <% } %>
+            <% if (typeof errorMessage !== 'undefined' && errorMessage && errorMessage.length > 0) { %>
+                <% errorMessage.forEach(function (msg) { %>
+                    <div class="auth-error-banner"><%= msg %></div>
+                <% }) %>
+            <% } %>
+
+            <p class="multi-hint">
+                We sent a 6-digit code to <strong style="color:var(--white)"><%= email %></strong>.
+                <%= purpose === 'signup' ? 'Enter it below to finish creating your account.' : 'Enter it below to make this the email on your account.' %>
+                It works for <%= minutes %> minutes.
+            </p>
+
+            <form method="POST" action="/verify-email">
+                <div class="field-group cols-1">
+                    <div class="field">
+                        <label for="verifyCode">Verification Code</label>
+                        <input type="text" id="verifyCode" name="code" inputmode="numeric" autocomplete="one-time-code"
+                            pattern="[0-9 ]*" maxlength="7" placeholder="000000" required autofocus
+                            style="font-size:24px;letter-spacing:0.4em;text-align:center">
+                        <div class="field-hint">Can't find it? Check your spam folder.</div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary auth-submit-btn">
+                    Confirm
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                </button>
+            </form>
+
+            <div class="auth-divider"><span>Didn't get it?</span></div>
+
+            <form method="POST" action="/verify-email/resend">
+                <button type="submit" class="btn-ghost auth-secondary-btn">Send a New Code</button>
+            </form>
+
+        </div>
+    </div>
+</body>
+
+</html>
