@@ -156,6 +156,74 @@ async function priceBooking(input) {
     return JSON.parse(estimate)
 }
 
+/**
+ * What the booking form and tech sheet would show for one vehicle's oil
+ * change, worked out by the same code: the spec entry used, the tool
+ * list, the oils offered, and every filter brand's oil / engine / cabin
+ * part number with how well it fits. Used by Admin > Site > Parts & Tools Check.
+ */
+async function inspectVehicle(vehicle) {
+    const [catalog, settings, spec] = await Promise.all([
+        PartsCatalog.getCatalog(),
+        BusinessConfig.getPricingSettings(),
+        VehicleSpec.resolveFor(vehicle.make, vehicle.model, vehicle.year)
+    ])
+    const generated = {
+        '@partsCatalog': generatePartsCatalogScript(catalog),
+        '@businessConfig': generateBusinessConfigScript(settings)
+    }
+    const state = {
+        vinMode: 'manual',
+        selectedMake: String(vehicle.make || ''),
+        selectedModel: String(vehicle.model || ''),
+        selectedYear: vehicle.year || '',
+        selectedType: '',
+        category: 'Automotive',
+        locationType: '',
+        services: [],
+        selectedParts: {},
+        discount: null,
+        lastEstimate: null
+    }
+    const sandbox = { console, document: fakeDocument(), __state: state, __spec: spec }
+    sandbox.window = sandbox
+    vm.createContext(sandbox)
+    vm.runInContext('const state = __state; function getVehicleSpecs() { return __spec; }', sandbox)
+    ENGINE_SCRIPTS.forEach(file => {
+        if (generated[file]) vm.runInContext(generated[file], sandbox, { filename: file })
+        else loadScript(file).runInContext(sandbox)
+    })
+
+    const result = vm.runInContext(`(() => {
+        const specs = resolveVehicleSpecs();
+        const v = currentVehicle();
+        const blocked = isOilChangeBlocked(state.selectedMake, state.selectedModel);
+        const viscosity = (specs.oil && specs.oil.viscosity) || '5W-30';
+        const oils = (tier) => getAvailableOilBrands(tier, specs.oilTierOverride || null, false, viscosity).map(name => {
+            const p = OIL_PRODUCTS[name];
+            return { name, quartPartNumber: p.partNumber, jugPartNumber: p.jugPartNumber, price: p.price, jugPrice: p.jugPrice };
+        });
+        const filters = getAvailableFilterBrands(v.make).map(brand => {
+            const row = { brand };
+            ['oil', 'engine', 'cabin'].forEach(type => {
+                const r = getPartRecord('oilChange', 'filterBrand', brand, v, type);
+                row[type] = { partNumber: r.partNumber, price: r.price, fitment: r.fitment };
+            });
+            return row;
+        });
+        return JSON.stringify({
+            specs,
+            usingGeneric: !!specs.isEstimate && specs.verified !== false,
+            blocked,
+            tools: getOilChangeTools(specs),
+            budgetOils: oils('budget'),
+            premiumOils: oils('premium'),
+            filters
+        });
+    })()`, sandbox, { timeout: 2000 })
+    return { ...JSON.parse(result), specEntry: spec }
+}
+
 /** Every service name the form offers for a category — used to reject made-up services. */
 async function knownServiceNames(category) {
     const settings = await BusinessConfig.getPricingSettings()
@@ -172,4 +240,4 @@ async function knownServiceNames(category) {
     return JSON.parse(names)[category] || null
 }
 
-module.exports = { priceBooking, knownServiceNames }
+module.exports = { priceBooking, knownServiceNames, inspectVehicle }

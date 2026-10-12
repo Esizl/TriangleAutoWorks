@@ -228,8 +228,7 @@ function buildConfiguratorHTML() {
             const selectedOilPart = current.oilBrand
                 ? getPartRecord('oilChange', 'oilProducts', current.oilBrand)
                 : null;
-            const jugSizeForPromo = window.OIL_JUG_SIZE_QTS || 5;
-            const qualifiesForPromo = selectedOilPart?.includesFreeFilter && qty >= jugSizeForPromo;
+            const qualifiesForPromo = selectedOilPart?.includesFreeFilter && planOilPurchase(qty, selectedOilPart).jugs > 0;
             const promoNote = qualifiesForPromo
                 ? `<div class="config-promo-flag">Select Carquest as the filter brand to get it free with this 5qt.</div>`
                 : '';
@@ -408,12 +407,67 @@ function buildLineItem(label, partRecord, qty, unitLabel) {
         label,
         partNumber: partRecord.partNumber,
         supplier: partRecord.supplier ? getSupplierInfo(partRecord.supplier) : null,
+        url: partRecord.url || null,
+        // How far the part number can be trusted for this vehicle — see
+        // getPartRecord() in the generated partsCatalog.js.
+        fitment: partRecord.fitment || (partRecord.partNumber ? 'default' : 'none'),
         unitPrice: partRecord.price || 0,
         qty,
         unitLabel,
         lineTotal,
         isPlaceholder: partRecord.isPlaceholder
     };
+}
+
+/**
+ * How the oil is actually bought for a capacity: whole 5qt jugs plus
+ * whole loose quarts (nobody sells 0.8 of a quart). When the leftover
+ * quarts would cost more than one more jug, it's one more jug instead —
+ * a 4.4 qt car gets a 5qt jug, not five single quarts.
+ */
+function planOilPurchase(capacityQts, oilPart) {
+    const jugSize = window.OIL_JUG_SIZE_QTS || 5;
+    const needed = Math.ceil(capacityQts - 1e-9);
+    let jugs = Math.floor(needed / jugSize);
+    let quarts = needed - jugs * jugSize;
+    const quartPrice = oilPart.price || 0;
+    const jugPrice = (oilPart.jugPrice != null) ? oilPart.jugPrice : quartPrice * jugSize;
+    if (quarts > 0 && jugPrice <= quarts * quartPrice) {
+        jugs += 1;
+        quarts = 0;
+    }
+    return { jugs, quarts };
+}
+
+/**
+ * Oil change tool list for a vehicle: the tools on its spec entry (or the
+ * generic set when the entry lists none — an empty list used to mean NO
+ * tools on the tech sheet), plus the drain plug and filter sockets from
+ * the spec's own fields when they aren't already in the list.
+ */
+function getOilChangeTools(specs) {
+    const listed = specs && specs.tools && specs.tools.oilChange;
+    const tools = (Array.isArray(listed) && listed.length > 0)
+        ? listed.slice()
+        : GENERIC_FALLBACK_SPECS.tools.oilChange.slice();
+
+    const mentions = size => tools.some(t => t.toLowerCase().includes(String(size).toLowerCase()));
+    const filterSocket = specs && specs.filter && specs.filter.socket;
+    const drainPlug = specs && specs.drainPlug;
+
+    // "64mm" -> "64mm Oil Filter Socket"; "64mm cap wrench" is already a tool name.
+    const namesATool = text => /socket|wrench|tool|cap|hex|allen|torx|key|pliers/i.test(text);
+
+    if (filterSocket && !/standard/i.test(filterSocket) && !mentions(filterSocket)) {
+        // A specific filter tool makes the generic filter wrench redundant.
+        const generic = tools.indexOf('Oil Filter Wrench');
+        if (generic !== -1) tools.splice(generic, 1);
+        tools.unshift(namesATool(filterSocket) ? `${filterSocket} (oil filter)` : `${filterSocket} Oil Filter Socket`);
+    }
+    if (drainPlug && !/standard/i.test(drainPlug) && !mentions(drainPlug)) {
+        tools.unshift(namesATool(drainPlug) ? `${drainPlug} (drain plug)` : `${drainPlug} Socket (drain plug)`);
+    }
+    return tools;
 }
 
 /**
@@ -493,10 +547,9 @@ function computeBaseEstimate() {
             if (sel.oilBrand && sel.filterBrand) {
                 const totalQty = specs?.oil?.capacity || 5;
                 const jugSize = window.OIL_JUG_SIZE_QTS || 5;
-                const fullJugs = Math.floor(totalQty / jugSize);
-                const remainderQts = totalQty % jugSize;
 
                 const oilPart = getPartRecord('oilChange', 'oilProducts', sel.oilBrand);
+                const { jugs: fullJugs, quarts: remainderQts } = planOilPurchase(totalQty, oilPart);
                 // Oil filter: pass the vehicle + explicit "oil" filterType so
                 // any vehicle-specific override (FILTER_PART_NUMBERS) for
                 // this brand/vehicle/filterType resolves to the correct
@@ -510,8 +563,13 @@ function computeBaseEstimate() {
                     const jugUnitPrice = (oilPart.jugPrice != null) ? oilPart.jugPrice : (oilPart.price || 0) * jugSize;
                     lineItems.push({
                         label: `${sel.oilBrand} Motor Oil (${jugSize}qt)`,
-                        partNumber: oilPart.jugPartNumber || oilPart.partNumber,
+                        // The jug's own part number. The quart number is a
+                        // different product, so it isn't used as a stand-in.
+                        partNumber: oilPart.jugPartNumber || null,
                         supplier: oilPart.supplier ? getSupplierInfo(oilPart.supplier) : null,
+                        url: oilPart.url || null,
+                        // Oil is chosen by viscosity, not by vehicle — no fit check.
+                        fitment: oilPart.jugPartNumber ? 'product' : 'missing',
                         unitPrice: jugUnitPrice,
                         qty: fullJugs,
                         unitLabel: `${jugSize}qt`,
@@ -520,7 +578,9 @@ function computeBaseEstimate() {
                     });
                 }
                 if (remainderQts > 0) {
-                    lineItems.push(buildLineItem(`${sel.oilBrand} Motor Oil (1qt)`, oilPart, remainderQts, '1qt'));
+                    const quartLine = buildLineItem(`${sel.oilBrand} Motor Oil (1qt)`, oilPart, remainderQts, '1qt');
+                    quartLine.fitment = oilPart.partNumber ? 'product' : 'missing';
+                    lineItems.push(quartLine);
                 }
 
                 // Free-filter promo: brands that include a free Carquest
@@ -536,6 +596,8 @@ function computeBaseEstimate() {
                         label: `Carquest Oil Filter (free w/ ${sel.oilBrand} 5qt)`,
                         partNumber: filterPart.partNumber,
                         supplier: filterPart.supplier ? getSupplierInfo(filterPart.supplier) : null,
+                        url: filterPart.url || null,
+                        fitment: filterPart.fitment || (filterPart.partNumber ? 'default' : 'none'),
                         unitPrice: 0,
                         qty: 1,
                         unitLabel: 'each',
@@ -573,8 +635,7 @@ function computeBaseEstimate() {
                     cost: laborHours * LABOR_RATE_PER_HOUR
                 });
 
-                (specs?.tools?.oilChange || GENERIC_FALLBACK_SPECS.tools.oilChange)
-                    .forEach(t => toolsNeeded.add(t));
+                getOilChangeTools(specs).forEach(t => toolsNeeded.add(t));
 
                 if (oilPart.isPlaceholder || filterPart.isPlaceholder) hasPlaceholderPricing = true;
             }
@@ -899,6 +960,8 @@ function refreshConfiguratorAndEstimate() {
 window.refreshConfiguratorAndEstimate = refreshConfiguratorAndEstimate;
 window.buildAdminPayload = buildAdminPayload;
 window.computeEstimate = computeEstimate;
+window.getOilChangeTools = getOilChangeTools;
+window.planOilPurchase = planOilPurchase;
 window.applyDropOffDiscount = applyDropOffDiscount;
 window.DROP_OFF_LOCATION = DROP_OFF_LOCATION;
 window.getEstimateHours = getEstimateHours;

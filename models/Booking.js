@@ -11,7 +11,9 @@ const PartLineItemSchema = new mongoose.Schema({
     qty: Number,
     unitLabel: String,
     lineTotal: Number,
-    isPlaceholder: Boolean
+    isPlaceholder: Boolean,
+    url: String,               // product page to order from
+    fitment: String            // 'vehicle' | 'default' | 'product' | 'missing' | 'none' — see getPartRecord()
 }, { _id: false })
 
 const LaborLineItemSchema = new mongoose.Schema({

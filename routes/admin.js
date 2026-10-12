@@ -1,6 +1,6 @@
 const router = require('express').Router()
 const { ensureAdmin } = require('../config/ensureAuth')
-const { loadVehicleData, saveVehicleData, VEHICLE_SIZE_CLASSES, isValidSizeClass } = require('../vehicleDataStore')
+const { loadVehicleData, saveVehicleData, VEHICLE_SIZE_CLASSES, isValidSizeClass, parseYearList, bulkAddVehicles } = require('../vehicleDataStore')
 const { loadBlocklist, saveBlocklist } = require('../blocklistStore')
 const Booking = require('../models/Booking')
 const VehicleSpec = require('../models/VehicleSpec')
@@ -10,6 +10,8 @@ const DiscountCode = require('../models/DiscountCode')
 const Review = require('../models/Review')
 const TrustedPhone = require('../models/TrustedPhone')
 const { phoneKey } = require('../services/trust')
+const { findCatalogIssues } = require('../services/partsCheck')
+const { inspectVehicle } = require('../services/priceEngine')
 const User = require('../models/User')
 const bcrypt = require('bcrypt')
 const crypto = require('crypto')
@@ -327,15 +329,62 @@ router.get('/site', ensureAdmin, (req, res) => {
 router.get('/site/vehicles', ensureAdmin, async (req, res) => {
     try {
         const { VEHICLE_DATA, VEHICLE_SIZES } = loadVehicleData()
+        // Left over from a bulk add with problem lines; shown once.
+        const bulkErrors = req.session.vehicleBulkErrors || null
+        const bulkText = req.session.vehicleBulkText || ''
+        delete req.session.vehicleBulkErrors
+        delete req.session.vehicleBulkText
         res.render('admin/site-vehicles', {
             vehicleData: VEHICLE_DATA,
             vehicleSizes: VEHICLE_SIZES,
-            sizeClasses: VEHICLE_SIZE_CLASSES
+            sizeClasses: VEHICLE_SIZE_CLASSES,
+            // Vehicle data lives in a file. On Railway the file is rebuilt
+            // from GitHub on every deploy, so edits made on the live site
+            // are lost then. See the banner on the page.
+            onLiveServer: !!(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID),
+            bulkErrors,
+            bulkText
         })
     } catch (err) {
         console.error(err)
         req.flash('errorMessage', 'Failed to load vehicle data.')
         // res.redirect('/admin')
+    }
+})
+
+// --- Add many vehicles at once (pasted lines: Make, Model, Years, Size) ---
+router.post('/site/vehicles/bulk', ensureAdmin, async (req, res) => {
+    try {
+        const text = String(req.body.lines || '')
+        if (!text.trim()) {
+            req.flash('errorMessage', 'Paste at least one line: Make, Model, Years, Size.')
+            return res.redirect('/admin/site/vehicles')
+        }
+        if (text.length > 100000) {
+            req.flash('errorMessage', 'That is too much at once — paste up to about 2,000 lines per batch.')
+            return res.redirect('/admin/site/vehicles')
+        }
+
+        const { added, errors } = bulkAddVehicles(text)
+        const parts = []
+        if (added.makes) parts.push(`${added.makes} new make${added.makes === 1 ? '' : 's'}`)
+        parts.push(`${added.models} new model${added.models === 1 ? '' : 's'}`)
+        parts.push(`${added.years} model year${added.years === 1 ? '' : 's'}`)
+        if (added.sizes) parts.push(`${added.sizes} size${added.sizes === 1 ? '' : 's'} set`)
+        req.flash('successMessage', `Added ${parts.join(', ')}.`)
+
+        if (errors.length) {
+            // Shown above the box, with the lines that failed put back in
+            // it so they can be fixed and resubmitted.
+            req.session.vehicleBulkErrors = errors.slice(0, 50)
+            const failed = new Set(errors.map(e => Number((e.match(/^Line (\d+)/) || [])[1])))
+            req.session.vehicleBulkText = text.split(/\r?\n/).filter((l, i) => failed.has(i + 1)).join('\n')
+        }
+        res.redirect('/admin/site/vehicles')
+    } catch (err) {
+        console.error(err)
+        req.flash('errorMessage', 'Failed to add those vehicles.')
+        res.redirect('/admin/site/vehicles')
     }
 })
 
@@ -441,10 +490,10 @@ router.post('/site/vehicles/size', ensureAdmin, async (req, res) => {
 router.post('/site/vehicles/year', ensureAdmin, async (req, res) => {
     try {
         const { make, model, year } = req.body
-        const yearNum = parseInt(year, 10)
-
-        if (!make || !model || !year || isNaN(yearNum) || yearNum < 1900 || yearNum > 2100) {
-            req.flash('errorMessage', 'A valid year is required.')
+        // One year, a range ("2010-2026") or a list ("2018 2020-2022").
+        const parsed = parseYearList(year)
+        if (!make || !model || parsed.error) {
+            req.flash('errorMessage', `Years: ${parsed.error || 'make and model are required'}.`)
             return res.redirect('/admin/site/vehicles')
         }
 
@@ -455,17 +504,20 @@ router.post('/site/vehicles/year', ensureAdmin, async (req, res) => {
             return res.redirect('/admin/site/vehicles')
         }
 
-        if (VEHICLE_DATA[make][model].includes(yearNum)) {
-            req.flash('errorMessage', `${yearNum} is already listed for ${model}.`)
+        const years = new Set(VEHICLE_DATA[make][model].map(Number))
+        const before = years.size
+        parsed.years.forEach(y => years.add(y))
+        const addedCount = years.size - before
+        VEHICLE_DATA[make][model] = Array.from(years).sort((a, b) => b - a)
+
+        if (addedCount === 0) {
+            req.flash('errorMessage', `${model} already has ${parsed.years.length === 1 ? 'that year' : 'all of those years'}.`)
             return res.redirect('/admin/site/vehicles')
         }
 
-        VEHICLE_DATA[make][model].push(yearNum)
-        VEHICLE_DATA[make][model].sort((a, b) => b - a)
-
         saveVehicleData(VEHICLE_DATA, COLORS, VEHICLE_TYPES)
 
-        req.flash('successMessage', `Added ${yearNum} to ${model}.`)
+        req.flash('successMessage', `Added ${addedCount} year${addedCount === 1 ? '' : 's'} to ${make} ${model}.`)
         res.redirect('/admin/site/vehicles')
     } catch (err) {
         console.error(err)
@@ -721,6 +773,41 @@ router.post('/site/blocklist/delete', ensureAdmin, async (req, res) => {
         console.error(err)
         req.flash('errorMessage', 'Failed to delete blocklist entry.')
         res.redirect('/admin/site/blocklist')
+    }
+})
+
+// --- Site: parts & tools check ---
+// Lists catalog / spec gaps, and shows exactly what a tech sheet would
+// say for one vehicle (same code as the booking form).
+router.get('/site/parts-check', ensureAdmin, async (req, res) => {
+    try {
+        const { VEHICLE_DATA } = loadVehicleData()
+        const issues = await findCatalogIssues()
+
+        const make = String(req.query.make || '')
+        const model = String(req.query.model || '')
+        const year = String(req.query.year || '')
+        let inspection = null
+        let inspectError = null
+        if (make && model) {
+            if (!VEHICLE_DATA[make] || !VEHICLE_DATA[make][model]) {
+                inspectError = `${make} ${model} isn't in Vehicle Data.`
+            } else {
+                inspection = await inspectVehicle({ make, model, year })
+            }
+        }
+
+        res.render('admin/site-parts-check', {
+            issues,
+            vehicleData: VEHICLE_DATA,
+            query: { make, model, year },
+            inspection,
+            inspectError
+        })
+    } catch (err) {
+        console.error(err)
+        req.flash('errorMessage', 'Failed to run the parts check.')
+        res.redirect('/admin/site')
     }
 })
 

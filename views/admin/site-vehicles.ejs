@@ -308,7 +308,30 @@
             .inline-form input { width: 100%; }
             .add-model-row { flex-direction: column; }
         }
-    </style>
+    
+        /* ── Bulk add + search ── */
+        .bulk-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+        .bulk-title { font-size: 15px; font-weight: 600; color: var(--white); margin-bottom: 6px; }
+        .bulk-sub { font-size: 13px; color: var(--silver-dim); margin-bottom: 14px; line-height: 1.55; }
+        .bulk-sub code { background: var(--card2); padding: 1px 5px; border-radius: 3px; color: var(--text); }
+        .bulk-card textarea {
+            display: block; width: 100%; resize: vertical; min-height: 120px;
+            background: var(--card2); border: 1px solid var(--border); border-radius: var(--radius);
+            color: var(--white); font-family: ui-monospace, Consolas, monospace; font-size: 13px; line-height: 1.6;
+            padding: 12px 14px; outline: none;
+        }
+        .bulk-card textarea:focus { border-color: rgba(200, 16, 46, 0.5); }
+        .bulk-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+        .bulk-note { font-size: 12px; color: var(--silver-dim); }
+        .bulk-errors { margin: 8px 0 0 18px; }
+        .bulk-errors li { margin-bottom: 3px; }
+        .vehicle-search {
+            display: block; width: 100%; margin-bottom: 14px;
+            background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+            color: var(--white); font-size: 14px; padding: 11px 14px; outline: none;
+        }
+        .vehicle-search:focus { border-color: rgba(200, 16, 46, 0.5); }
+</style>
 </head>
 <body>
     <div class="topbar">
@@ -327,7 +350,11 @@
             <h1>Vehicle Data</h1>
             <span class="count"><%= Object.keys(vehicleData).length %> makes</span>
         </div>
-        <div class="page-sub">Models and model years available in the booking form. Makes are fixed — add or remove models and years as new vehicles come out. Each model's size sets its size-based pricing automatically, so customers never choose it themselves.</div>
+        <div class="page-sub">Models and model years available in the booking form. Each model's size sets its size-based pricing automatically, so customers never choose it themselves.</div>
+
+        <% if (onLiveServer) { %>
+            <div class="flash flash-error">You're on the live site. Vehicle data is saved in a file, and the live server rebuilds its files from GitHub on every deploy — changes made here will be lost at the next deploy. Add vehicles on your own computer, then commit and push.</div>
+        <% } %>
 
         <% if (typeof successMessage !== 'undefined' && successMessage && successMessage.length) { %>
             <% successMessage.forEach(function(msg) { %>
@@ -352,6 +379,28 @@
             <div class="flash flash-error"><%= unsized.length %> model<%= unsized.length === 1 ? ' has' : 's have' %> no size set, so customers pick their own size for <%= unsized.length === 1 ? 'it' : 'them' %>: <%= unsized.join(', ') %></div>
         <% } %>
 
+        <div class="bulk-card">
+            <div class="bulk-title">Add vehicles in bulk</div>
+            <div class="bulk-sub">One vehicle per line: <strong>Make, Model, Years, Size</strong>. Years can be a range or a list (<code>2010-2026</code>, <code>2015-2018 2020</code>). Size is car, mid or large (sedan / SUV / truck work too) and can be left off for a model that already has one. New makes and models are created; years are only ever added. Rows pasted from a spreadsheet work as-is.</div>
+
+            <% if (bulkErrors && bulkErrors.length) { %>
+                <div class="flash flash-error">
+                    <%= bulkErrors.length %> line<%= bulkErrors.length === 1 ? ' was' : 's were' %> skipped — fix and add again:
+                    <ul class="bulk-errors"><% bulkErrors.forEach(function(e) { %><li><%= e %></li><% }) %></ul>
+                </div>
+            <% } %>
+
+            <form method="POST" action="/admin/site/vehicles/bulk">
+                <textarea name="lines" rows="6" spellcheck="false" placeholder="Toyota, Camry, 2010-2026, car&#10;Ford, F-150, 2015-2020 2022, truck&#10;Hyundai, Ioniq 5, 2022-2026, mid"><%= bulkText %></textarea>
+                <div class="bulk-actions">
+                    <span class="bulk-note">Electric-only models: add them to the Oil Change Blocklist too, or the form will offer them an oil change.</span>
+                    <button type="submit" class="btn-add-model">Add vehicles</button>
+                </div>
+            </form>
+        </div>
+
+        <input type="search" id="vehicleSearch" class="vehicle-search" placeholder="Find a make or model…" aria-label="Find a make or model">
+
         <div class="accordion">
             <% Object.keys(vehicleData).sort().forEach(function(make) { %>
                 <% const models = vehicleData[make]; %>
@@ -368,7 +417,7 @@
                         <% Object.keys(models).sort().forEach(function(model) { %>
                             <% const years = models[model]; %>
                             <% const deleteModelMsg = 'Remove ' + model + ' from ' + make + '? This will also remove all its model years.'; %>
-                            <div class="model-row">
+                            <div class="model-row" data-model="<%= model.toLowerCase() %>">
                                 <div class="model-row-header">
                                     <span class="model-name"><%= model %></span>
                                     <form method="POST" action="/admin/site/vehicles/model/delete" class="confirm-form" data-confirm="<%= deleteModelMsg %>">
@@ -408,8 +457,8 @@
                                 <form method="POST" action="/admin/site/vehicles/year" class="inline-form">
                                     <input type="hidden" name="make" value="<%= make %>">
                                     <input type="hidden" name="model" value="<%= model %>">
-                                    <input type="number" name="year" placeholder="e.g. 2026" min="1900" max="2100" required>
-                                    <button type="submit" class="btn-mini">Add year</button>
+                                    <input type="text" name="year" placeholder="2026 or 2010-2026" required style="width:150px">
+                                    <button type="submit" class="btn-mini">Add years</button>
                                 </form>
                             </div>
                         <% }); %>
@@ -432,6 +481,26 @@
     </div>
 
     <script>
+        // Find a make or model: opens matching makes and hides the rest.
+        (function () {
+            var search = document.getElementById('vehicleSearch');
+            if (!search) return;
+            search.addEventListener('input', function () {
+                var q = search.value.trim().toLowerCase();
+                document.querySelectorAll('.make-card').forEach(function (card) {
+                    var makeMatch = card.dataset.make.toLowerCase().indexOf(q) !== -1;
+                    var anyModel = false;
+                    card.querySelectorAll('.model-row').forEach(function (row) {
+                        var show = !q || makeMatch || row.dataset.model.indexOf(q) !== -1;
+                        row.style.display = show ? '' : 'none';
+                        if (show && !makeMatch) anyModel = true;
+                    });
+                    card.style.display = (!q || makeMatch || anyModel) ? '' : 'none';
+                    card.classList.toggle('open', !!q && (makeMatch || anyModel));
+                });
+            });
+        })();
+
         document.querySelectorAll('.confirm-form').forEach(function (form) {
             form.addEventListener('submit', function (e) {
                 var message = form.getAttribute('data-confirm');

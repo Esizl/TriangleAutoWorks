@@ -225,24 +225,40 @@ function resolveFilterOverride(brand, filterType, make, model, year) {
 // filterType defaults to "oil" so every existing call site (oil-change
 // filter selection) keeps working unchanged. Pass "engine" or "cabin"
 // explicitly for those add-on pickers.
+//
+// Every record comes back with a \`fitment\` saying how far its part number
+// can be trusted for THIS vehicle (the tech sheet shows it):
+//   'vehicle'  from a Filter Overrides entry for this exact vehicle
+//   'default'  the brand's / option's generic part number — check it fits
+//   'none'     no part number on file — look it up before the job
+// Engine and cabin air filters never fall back to the brand's generic
+// number: that number (and price) is for its OIL filter, so showing it
+// for an air filter would be wrong.
 function getPartRecord(serviceKey, optionGroup, optionValue, vehicle = null, filterType = "oil") {
     const record = PARTS_CATALOG?.[serviceKey]?.[optionGroup]?.[optionValue];
     const base = record || makePart();
 
-    if (serviceKey === 'oilChange' && optionGroup === 'filterBrand' && vehicle?.make && vehicle?.model) {
-        const chosen = resolveFilterOverride(optionValue, filterType, vehicle.make, vehicle.model, vehicle.year);
+    if (serviceKey === 'oilChange' && optionGroup === 'filterBrand') {
+        const chosen = (vehicle?.make && vehicle?.model)
+            ? resolveFilterOverride(optionValue, filterType, vehicle.make, vehicle.model, vehicle.year)
+            : null;
         if (chosen) {
             return {
                 ...base,
-                partNumber: chosen.partNumber ?? base.partNumber,
+                partNumber: chosen.partNumber ?? (filterType === 'oil' ? base.partNumber : null),
                 price: chosen.price ?? base.price,
                 url: chosen.url ?? base.url,
-                isPlaceholder: false
+                isPlaceholder: false,
+                fitment: (chosen.partNumber || filterType === 'oil') ? 'vehicle' : 'none'
             };
+        }
+        if (filterType !== 'oil') {
+            // Price is only the oil filter's, so it's flagged as a placeholder.
+            return { ...base, partNumber: null, isPlaceholder: true, fitment: 'none' };
         }
     }
 
-    return base;
+    return { ...base, fitment: base.partNumber ? 'default' : 'none' };
 }
 
 function getSupplierInfo(supplierKey) {

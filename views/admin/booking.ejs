@@ -192,6 +192,10 @@
         .tech-line:last-of-type { border-bottom: none; }
         .tech-line-label { color: var(--text); overflow-wrap: break-word; word-break: break-word; }
         .tech-line-label .part-num { color: var(--silver-dim); font-size: 12px; }
+        .tech-line-label .fit-ok { color: var(--green); }
+        .tech-line-label .fit-warn { color: var(--amber); }
+        .tech-line-label .fit-missing { color: var(--amber); font-weight: 600; }
+        .tech-line-label .supplier-link { color: var(--silver); }
         .tech-line-price { color: var(--white); font-weight: 500; flex-shrink: 0; }
         .tech-divider {
             border-top: 1px solid var(--border);
@@ -442,7 +446,16 @@
                     <div class="tech-line">
                         <span class="tech-line-label">
                             <%= p.label %><%= p.qty > 1 ? ` ×${p.qty}` : '' %>
-                            <% if (p.partNumber) { %><br><span class="part-num"><%= p.partNumber %></span><% } %>
+                            <% if (p.partNumber) { %>
+                                <br><span class="part-num"><%= p.partNumber %><% if (p.fitment === 'default') { %> · <span class="fit-warn">default number — check it fits</span><% } else if (p.fitment === 'vehicle') { %> · <span class="fit-ok">for this vehicle</span><% } %></span>
+                            <% } else if (p.fitment === 'missing') { %>
+                                <br><span class="part-num fit-missing">No part # in the Parts Catalog — add it there</span>
+                            <% } else if (p.lineTotal > 0 || p.fitment === 'none') { %>
+                                <br><span class="part-num fit-missing">Part # needed — look it up for this vehicle</span>
+                            <% } %>
+                            <% if (p.supplier && p.supplier.label) { %>
+                                <br><span class="part-num">From <% if (p.url || p.supplier.baseUrl) { %><a class="supplier-link" href="<%= p.url || p.supplier.baseUrl %>" target="_blank" rel="noopener"><%= p.supplier.label %></a><% } else { %><%= p.supplier.label %><% } %></span>
+                            <% } %>
                         </span>
                         <span class="tech-line-price">$<%= p.lineTotal.toFixed(2) %></span>
                     </div>

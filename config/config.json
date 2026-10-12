@@ -2,7 +2,7 @@
   "server": {
     "mongoUri": "mongodb+srv://Esizl:Mqn4C2pXUjpXW04v@cluster0.8oucz.mongodb.net/infinitum?retryWrites=true&w=majority&appName=triangleautoworks",
     "port": 8080,
-    "version": "0.1.17"
+    "version": "0.1.171"
   },
   "webauthn": {
     "rpID": "triangleautowork.com",

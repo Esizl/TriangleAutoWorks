@@ -96,4 +96,139 @@ function saveVehicleData(VEHICLE_DATA, COLORS, VEHICLE_TYPES, VEHICLE_SIZES) {
     fs.writeFileSync(VEHICLE_DATA_PATH, fileText, 'utf8')
 }
 
-module.exports = { loadVehicleData, saveVehicleData, VEHICLE_SIZE_CLASSES, isValidSizeClass }
+const OLDEST_YEAR = 1980
+const NEWEST_YEAR = new Date().getFullYear() + 2
+
+/**
+ * "2010-2026", "2015 2018 2020-2022", "2019,2021" -> sorted list of years
+ * (newest first). Returns { years } or { error } with a readable reason.
+ */
+function parseYearList(text) {
+    const parts = String(text || '').split(/[\s,;/]+/).filter(Boolean)
+    if (parts.length === 0) return { error: 'no years given' }
+    const years = new Set()
+    for (const part of parts) {
+        const range = part.match(/^(\d{4})\s*[-–]\s*(\d{4})$/)
+        const single = part.match(/^(\d{4})$/)
+        let from, to
+        if (range) { from = Number(range[1]); to = Number(range[2]) }
+        else if (single) { from = to = Number(single[1]) }
+        else return { error: `"${part}" isn't a year or a range like 2010-2026` }
+        if (from > to) [from, to] = [to, from]
+        if (from < OLDEST_YEAR || to > NEWEST_YEAR) return { error: `years must be between ${OLDEST_YEAR} and ${NEWEST_YEAR}` }
+        for (let y = from; y <= to; y++) years.add(y)
+    }
+    return { years: Array.from(years).sort((a, b) => b - a) }
+}
+
+// Words people naturally type for each size class.
+const SIZE_WORDS = {
+    car: ['car', 'sedan', 'coupe', 'hatchback', 'hatch', 'convertible', 'small', 's'],
+    mid: ['mid', 'suv', 'crossover', 'wagon', 'small suv', '2-row', 'two-row', 'medium', 'm'],
+    large: ['large', 'truck', 'pickup', 'van', 'minivan', '3-row', 'three-row', 'large suv', 'big', 'l']
+}
+
+/** "Sedan" -> "car", "truck" -> "large"; '' if blank, null if not recognised. */
+function normalizeSizeWord(word) {
+    const w = String(word || '').trim().toLowerCase()
+    if (!w) return ''
+    const match = Object.entries(SIZE_WORDS).find(([, words]) => words.includes(w))
+    return match ? match[0] : null
+}
+
+/** Existing key matched ignoring case ("toyota" finds "Toyota"), else null. */
+function findKey(obj, name) {
+    const wanted = String(name || '').trim().toLowerCase()
+    return Object.keys(obj || {}).find(k => k.toLowerCase() === wanted) || null
+}
+
+/**
+ * Adds many vehicles at once from pasted text, one per line:
+ *     Make, Model, Years, Size
+ *     Toyota, Camry, 2010-2026, car
+ *     Ford, F-150, 2015-2020 2022, truck
+ * Fields can be separated by commas or tabs (so rows pasted straight from
+ * a spreadsheet work). Size is optional for a model that already has one.
+ * A make or model that doesn't exist yet is created. Years are added to
+ * what's there, never removed. Lines starting with # are ignored.
+ *
+ * Returns { added: {makes, models, years, sizes}, errors: ["line 3: …"] }
+ * and saves only if at least one line was valid.
+ */
+function bulkAddVehicles(text) {
+    const { VEHICLE_DATA, COLORS, VEHICLE_TYPES, VEHICLE_SIZES } = loadVehicleData()
+    const added = { makes: 0, models: 0, years: 0, sizes: 0 }
+    const errors = []
+    let changed = false
+
+    String(text || '').split(/\r?\n/).forEach((rawLine, index) => {
+        const line = rawLine.trim()
+        if (!line || line.startsWith('#')) return
+        const label = `Line ${index + 1} ("${line.length > 60 ? line.slice(0, 57) + '…' : line}")`
+
+        const fields = line.split(line.includes('\t') ? '\t' : ',').map(f => f.trim())
+        if (fields.length < 3) {
+            errors.push(`${label}: needs at least Make, Model, Years`)
+            return
+        }
+        const [makeIn, modelIn, yearsIn, sizeIn = ''] = fields
+        if (!makeIn || !modelIn) {
+            errors.push(`${label}: make and model can't be blank`)
+            return
+        }
+        if (makeIn.length > 40 || modelIn.length > 60) {
+            errors.push(`${label}: make or model name is too long`)
+            return
+        }
+
+        const parsedYears = parseYearList(yearsIn)
+        if (parsedYears.error) {
+            errors.push(`${label}: ${parsedYears.error}`)
+            return
+        }
+        const size = normalizeSizeWord(sizeIn)
+        if (size === null) {
+            errors.push(`${label}: size "${sizeIn}" isn't one of car / mid / large (sedan, SUV, truck… also work)`)
+            return
+        }
+
+        // A brand-new make typed all lowercase gets capitalised ("rivian" ->
+        // "Rivian"); anything else is kept exactly as typed ("BMW", "McLaren").
+        const tidyMake = makeIn === makeIn.toLowerCase() ? makeIn.replace(/\b\w/g, c => c.toUpperCase()) : makeIn
+        const make = findKey(VEHICLE_DATA, makeIn) || tidyMake
+        const model = findKey(VEHICLE_DATA[make], modelIn) || modelIn
+        const existingSize = (VEHICLE_SIZES[make] || {})[model]
+        if (!size && !existingSize) {
+            errors.push(`${label}: ${make} ${model} is new, so it needs a size (car / mid / large)`)
+            return
+        }
+
+        if (!VEHICLE_DATA[make]) { VEHICLE_DATA[make] = {}; added.makes++ }
+        if (!VEHICLE_DATA[make][model]) { VEHICLE_DATA[make][model] = []; added.models++ }
+
+        const years = new Set(VEHICLE_DATA[make][model].map(Number))
+        const before = years.size
+        parsedYears.years.forEach(y => years.add(y))
+        added.years += years.size - before
+        VEHICLE_DATA[make][model] = Array.from(years).sort((a, b) => b - a)
+
+        if (size && size !== existingSize) {
+            VEHICLE_SIZES[make] = { ...VEHICLE_SIZES[make], [model]: size }
+            added.sizes++
+        }
+        changed = true
+    })
+
+    if (changed) saveVehicleData(VEHICLE_DATA, COLORS, VEHICLE_TYPES, VEHICLE_SIZES)
+    return { added, errors }
+}
+
+module.exports = {
+    loadVehicleData,
+    saveVehicleData,
+    VEHICLE_SIZE_CLASSES,
+    isValidSizeClass,
+    parseYearList,
+    normalizeSizeWord,
+    bulkAddVehicles
+}
