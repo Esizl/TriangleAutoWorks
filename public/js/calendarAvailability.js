@@ -7,7 +7,10 @@
  * elsewhere in the booking flow.
  *
  * Behavior:
- *  - Fetches /api/availability for the visible month range.
+ *  - Fetches /api/availability for the visible month range, for a job
+ *    as long as the one being booked (a 5-hour detail needs more open
+ *    windows than an oil change). The rules live on the server, in
+ *    services/scheduling.js; the server re-checks the slot on submit.
  *  - A day is only visually "restricted" (amber tint + dot) if it has
  *    at least one full window. A day is only fully disabled if EVERY
  *    window for that day is full.
@@ -44,7 +47,8 @@ const calendarState = {
     viewYear: null,
     viewMonth: null,
     selectedDate: null,
-    availability: {},
+    availability: {},   // "2026-07|3.5" (month|job hours) -> { unavailable, tooLate }
+    loadFailed: false
 };
 
 function pad2(n) { return String(n).padStart(2, '0'); }
@@ -52,8 +56,23 @@ function ymd(year, month, day) { return `${year}-${pad2(month + 1)}-${pad2(day)}
 function todayYmd() { const t = new Date(); return ymd(t.getFullYear(), t.getMonth(), t.getDate()); }
 function monthKey(year, month) { return `${year}-${pad2(month + 1)}`; }
 
+/** Hours of work in the job being booked (0 if there's no estimate yet). */
+function currentJobHours() {
+    if (typeof getEstimateHours !== 'function' || typeof state === 'undefined') return 0;
+    return getEstimateHours(state.lastEstimate) || 0;
+}
+
+/** A drop-off has no drive time, so it can fit where a mobile job can't. */
+function isDropOffBooking() {
+    return typeof state !== 'undefined' && state.locationType === 'Drop-off';
+}
+
+function availabilityKey(year, month) {
+    return `${monthKey(year, month)}|${currentJobHours()}|${isDropOffBooking() ? 'dropoff' : 'mobile'}`;
+}
+
 async function fetchAvailabilityForMonth(year, month) {
-    const key = monthKey(year, month);
+    const key = availabilityKey(year, month);
     if (calendarState.availability[key]) return calendarState.availability[key];
 
     const start = ymd(year, month, 1);
@@ -61,16 +80,26 @@ async function fetchAvailabilityForMonth(year, month) {
     const end = ymd(year, month, lastDay);
 
     try {
-        const res = await fetch(`/api/availability?start=${start}&end=${end}`);
-        if (!res.ok) throw new Error('availability fetch failed');
+        const res = await fetch(`/api/availability?start=${start}&end=${end}&hours=${currentJobHours()}${isDropOffBooking() ? '&dropoff=1' : ''}`);
+        if (!res.ok) throw new Error(`availability request failed (HTTP ${res.status})`);
         const data = await res.json();
-        calendarState.availability[key] = data;
-        return data;
+        calendarState.availability[key] = { unavailable: data.unavailable || {}, tooLate: data.tooLate || [] };
+        calendarState.loadFailed = false;
     } catch (err) {
-        console.error('Could not load availability, defaulting to all-open:', err);
-        calendarState.availability[key] = {};
-        return {};
+        // Not cached, so the next render tries again. The calendar still
+        // works — the server checks the slot when the booking is submitted.
+        console.error('Could not load availability:', err);
+        calendarState.loadFailed = true;
+        return { unavailable: {}, tooLate: [] };
     }
+    return calendarState.availability[key];
+}
+
+/** Windows that can't be picked on a date: taken ones, plus ones the job is too long for. */
+function closedWindowsFor(dateStr) {
+    const [year, month] = dateStr.split('-').map(Number);
+    const data = calendarState.availability[availabilityKey(year, month - 1)] || { unavailable: {}, tooLate: [] };
+    return { taken: data.unavailable[dateStr] || [], tooLate: data.tooLate };
 }
 
 function initCalendar() {
@@ -83,8 +112,20 @@ function initCalendar() {
     if (prevBtn) prevBtn.onclick = () => navigateMonth(-1);
     if (nextBtn) nextBtn.onclick = () => navigateMonth(1);
 
-    renderCalendar();
-    renderTimePills([]); // start with all pills enabled/unselected until a date is picked
+    // Coming back to this step after changing services: the job may be a
+    // different length now, so the picked date is re-checked against
+    // fresh availability (which clears a time window that no longer fits).
+    const picked = calendarState.selectedDate;
+    if (picked) {
+        const [year, month] = picked.split('-').map(Number);
+        calendarState.viewYear = year;
+        calendarState.viewMonth = month - 1;
+    }
+
+    renderCalendar().then(() => {
+        if (picked) selectCalendarDate(picked);
+        else renderTimePills({ taken: [], tooLate: [] }); // nothing closed until a date is picked
+    });
 }
 
 function navigateMonth(delta) {
@@ -128,9 +169,10 @@ async function renderCalendar() {
     for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = ymd(viewYear, viewMonth, day);
         const isPast = dateStr < today;
-        const fullWindows = availability[dateStr] || [];
-        const allFull = fullWindows.length >= WINDOW_LABELS.length;
-        const isRestricted = fullWindows.length > 0 && !allFull;
+        const taken = availability.unavailable[dateStr] || [];
+        const closedCount = new Set(taken.concat(availability.tooLate)).size;
+        const allFull = closedCount >= WINDOW_LABELS.length;
+        const isRestricted = taken.length > 0 && !allFull;
         const isSelected = calendarState.selectedDate === dateStr;
         const isToday = dateStr === today;
 
@@ -161,29 +203,26 @@ function selectCalendarDate(dateStr) {
         el.classList.toggle('cal-selected', el.dataset.date === dateStr);
     });
 
-    const [year, month] = dateStr.split('-').map(Number);
-    const key = monthKey(year, month - 1);
-    const availability = calendarState.availability[key] || {};
-    const fullWindows = availability[dateStr] || [];
-
-    renderTimePills(fullWindows);
+    renderTimePills(closedWindowsFor(dateStr));
 
     if (typeof updateSidebar === 'function') updateSidebar();
 }
 
 /**
- * Renders the time-window pills. `fullWindows` is the list of window
- * values that are full for the currently selected date (empty array if
- * no date picked yet, or the date is wide open).
+ * Renders the time-window pills. `closed` is { taken, tooLate }: the
+ * windows already booked on the selected date, and the windows this job
+ * is too long to start in (both empty if no date is picked yet).
  *
  * If the currently-selected time pill just became unavailable (because
  * the customer picked a new date where that window is now full), the
  * selection is cleared — same safety behavior as before.
  */
-function renderTimePills(fullWindows) {
+function renderTimePills(closed) {
     const container = document.getElementById('timePillGrid');
     const hiddenInput = document.getElementById('preferredTime');
     if (!container || !hiddenInput) return;
+
+    const fullWindows = closed.taken.concat(closed.tooLate);
 
     let selected = hiddenInput.value;
     if (selected && fullWindows.includes(selected)) {
@@ -208,7 +247,7 @@ function renderTimePills(fullWindows) {
                     <span class="time-pill-label">${w.label}</span>
                     <span class="time-pill-range">${w.range}</span>
                 </span>
-                ${isFull ? '<span class="time-pill-unavailable-tag">Unavailable</span>' : ''}
+                ${isFull ? `<span class="time-pill-unavailable-tag">${closed.taken.includes(w.value) ? 'Unavailable' : 'Too late'}</span>` : ''}
             </div>
         `;
     }).join('');
@@ -223,19 +262,21 @@ function selectTimeWindow(value) {
     // Re-render so the .selected class moves to the right pill — simpler
     // and less error-prone than hand-toggling classList on each pill.
     const dateStr = calendarState.selectedDate;
-    if (dateStr) {
-        const [year, month] = dateStr.split('-').map(Number);
-        const key = monthKey(year, month - 1);
-        const availability = calendarState.availability[key] || {};
-        const fullWindows = availability[dateStr] || [];
-        renderTimePills(fullWindows);
-    } else {
-        renderTimePills([]);
-    }
+    renderTimePills(dateStr ? closedWindowsFor(dateStr) : { taken: [], tooLate: [] });
 
     if (typeof updateSidebar === 'function') updateSidebar();
 }
 
+/** Forget everything fetched so far — used after the server says a slot was just taken. */
+function refreshCalendarAvailability() {
+    if (calendarState.viewYear === null) return Promise.resolve(); // calendar not shown yet
+    calendarState.availability = {};
+    return renderCalendar().then(() => {
+        if (calendarState.selectedDate) selectCalendarDate(calendarState.selectedDate);
+    });
+}
+
 window.initCalendar = initCalendar;
+window.refreshCalendarAvailability = refreshCalendarAvailability;
 window.selectCalendarDate = selectCalendarDate;
 window.selectTimeWindow = selectTimeWindow;

@@ -304,7 +304,7 @@
                 <div
                     style="margin-bottom:8px;font-size:11px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--silver-dim)">
                     Service Location</div>
-                <div class="location-grid" style="margin-bottom:28px">
+                <div class="location-grid<%= (typeof dropOff !== 'undefined' && dropOff) ? ' has-dropoff' : '' %>" style="margin-bottom:28px">
                     <div class="location-card" onclick="selectLocation('Home', this)">
                         <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"
                             stroke-linejoin="round">
@@ -329,7 +329,29 @@
                         </svg>
                         <div class="location-card-label">Other</div>
                     </div>
+                    <%# Only rendered for approved customers (services/trust.js). %>
+                    <% if (typeof dropOff !== 'undefined' && dropOff) { %>
+                    <div class="location-card location-card-dropoff" onclick="selectLocation('Drop-off', this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <path d="M5 17h14M6 17l1.5-5h9L18 17M8 12l1-3h6l1 3" />
+                            <circle cx="8" cy="18" r="1.5" />
+                            <circle cx="16" cy="18" r="1.5" />
+                        </svg>
+                        <div class="location-card-label">Bring it to us</div>
+                        <div class="location-card-saving"><%= dropOff.saving %></div>
+                    </div>
+                    <% } %>
                 </div>
+
+                <% if (typeof dropOff !== 'undefined' && dropOff) { %>
+                <div class="dropoff-info" id="dropOffInfo" style="display:none">
+                    <div class="dropoff-info-label">Bring your vehicle to</div>
+                    <div class="dropoff-info-address"><%= dropOff.address %></div>
+                    <% if (dropOff.notes) { %><div class="dropoff-info-notes"><%= dropOff.notes %></div><% } %>
+                    <div class="dropoff-info-saving">As an approved customer, bringing it to us takes <%= dropOff.saving %> your estimate.</div>
+                </div>
+                <% } %>
 
                 <div class="field-group cols-1" style="margin-bottom:20px">
                     <div class="field" id="f-address">
@@ -527,6 +549,8 @@
                 <p style="font-size:13px;color:var(--silver-dim);line-height:1.6;margin-bottom:28px">
                     Submitting this sends your request directly to our team. We'll reach out within a few hours to
                     confirm availability, finalize the appointment, and answer any questions.
+                    By submitting you agree to our <a href="/terms" target="_blank" style="color:var(--silver)">Terms</a>
+                    and <a href="/privacy" target="_blank" style="color:var(--silver)">Privacy Policy</a>.
                 </p>
 
                 <div class="field-error" id="submitError" style="display:none;margin-bottom:20px"></div>
@@ -560,6 +584,8 @@
                 <h2 class="success-title">You're Booked.</h2>
                 <p class="success-sub">We received your request and will text you shortly to confirm the time and
                     address. See you soon.</p>
+                <p class="success-sub" id="successEmailNote" style="display:none">A confirmation is on its way to your
+                    email, with a link to cancel or reschedule if your plans change.</p>
                 <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
                     <a href="/" class="btn-ghost">Back to Site</a>
                     <!-- <a href="tel:+17326478703" class="btn-primary">
@@ -647,10 +673,12 @@
     -->
     <script src="/js/vehicle-data.js"></script>
     <script src="/js/vehicleSpecs.js"></script>
-    <script src="/js/oilChangeBlocklist.js"></script>
+    <script src="/js/oilchangeblocklist.js"></script>
     <script src="/js/partsCatalog.js"></script>
+    <script src="/js/businessConfig.js"></script>
     <script src="/js/services.js"></script>
     <script src="/js/detailingCatalog.js"></script>
+    <script src="/js/tintCatalog.js"></script>
     <script src="/js/configurator.js"></script>
     <script src="/js/detailingConfigurator.js"></script>
 

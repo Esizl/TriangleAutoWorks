@@ -37,6 +37,12 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    // Approved by the owner to bring their vehicle to us for the cheaper
+    // drop-off price (see services/trust.js). Off for everyone by default.
+    trustedCustomer: {
+        type: Boolean,
+        default: false
+    },
     role: {
         type: Number,
         default: 1

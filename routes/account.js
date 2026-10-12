@@ -2,6 +2,7 @@ const router = require('express').Router()
 const { ensureAuthenticated } = require('../config/ensureAuth')
 const Booking = require('../models/Booking')
 const Review = require('../models/Review')
+const { limitForm } = require('../config/rateLimits')
 
 // --- Order history: bookings made while logged in, plus guest bookings
 // --- made with this account's phone number (see Booking.accountFilter) ---
@@ -15,9 +16,22 @@ router.get('/orders', ensureAuthenticated, async (req, res) => {
         const reviewByBooking = {}
         reviews.forEach(r => { reviewByBooking[String(r.booking)] = r })
 
+        // "Cancel or reschedule" links, only for bookings made while logged
+        // in to this account and still open. Guest bookings that merely
+        // share this account's phone number don't get one: a phone match
+        // isn't proof enough to let someone cancel the booking.
+        const manageLinks = {}
+        for (const b of bookings) {
+            const isOwn = b.user && String(b.user) === String(req.user._id)
+            if (isOwn && Booking.OPEN_STATUSES.includes(b.status)) {
+                manageLinks[String(b._id)] = `/booking/manage/${await b.ensureManageToken()}`
+            }
+        }
+
         res.render('orders', {
             bookings,
             reviewByBooking,
+            manageLinks,
             maxReviewLength: Review.MAX_TEXT_LENGTH
         })
     } catch (err) {
@@ -28,7 +42,7 @@ router.get('/orders', ensureAuthenticated, async (req, res) => {
 })
 
 // --- Leave a review on one of your own completed bookings ---
-router.post('/orders/:id/review', ensureAuthenticated, async (req, res) => {
+router.post('/orders/:id/review', ensureAuthenticated, limitForm('review', { fallback: '/account/orders' }), async (req, res) => {
     try {
         const rating = Number(req.body.rating)
         const text = String(req.body.text || '').trim()

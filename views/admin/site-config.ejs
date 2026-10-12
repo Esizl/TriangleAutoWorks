@@ -222,7 +222,7 @@
                 <div class="config-field">
                     <div class="config-field-info">
                         <div class="config-field-name">Labor rate</div>
-                        <div class="config-field-desc">Hourly labor rate used for quotes and repair pricing.</div>
+                        <div class="config-field-desc">Hourly labor rate for Automotive labor lines on the booking form (oil change, brakes, tires).</div>
                     </div>
                     <div class="config-input-wrap">
                         <span class="config-input-prefix">$</span>
@@ -244,12 +244,59 @@
 
                 <div class="config-field">
                     <div class="config-field-info">
+                        <div class="config-field-name">Sales tax</div>
+                        <div class="config-field-desc">Charged on every estimate (after any discount). Shown to customers on the tax line.</div>
+                    </div>
+                    <div class="config-input-wrap">
+                        <input type="number" name="taxRatePercent" value="<%= config.taxRatePercent %>" min="0" max="25" step="0.001" required>
+                        <span class="config-input-suffix">%</span>
+                    </div>
+                </div>
+
+                <div class="config-field">
+                    <div class="config-field-info">
                         <div class="config-field-name">Booking capacity per time window</div>
-                        <div class="config-field-desc">Max confirmed bookings allowed in each availability window before it shows as unavailable.</div>
+                        <div class="config-field-desc">How many confirmed jobs can overlap the same time window. 1 means one job at a time. A long job uses every window it runs into.</div>
                     </div>
                     <div class="config-input-wrap">
                         <input type="number" name="bookingCapacityPerWindow" value="<%= config.bookingCapacityPerWindow %>" min="1" step="1" required>
                         <span class="config-input-suffix">bookings</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-card" style="margin-top:20px">
+                <div class="config-field">
+                    <div class="config-field-info">
+                        <div class="config-field-name">Drop-off address</div>
+                        <div class="config-field-desc">Where approved customers bring their vehicle for the cheaper drop-off price. Only they see it — on the booking form and in their emails. Leave empty to turn drop-off off for everyone.</div>
+                    </div>
+                    <div class="config-input-wrap" style="flex:1;max-width:340px">
+                        <input type="text" name="dropOffAddress" value="<%= config.dropOffAddress || '' %>" placeholder="Street, city, zip" style="width:100%">
+                    </div>
+                </div>
+
+                <div class="config-field">
+                    <div class="config-field-info">
+                        <div class="config-field-name">Drop-off directions</div>
+                        <div class="config-field-desc">Optional. Shown under the address, e.g. "Park in the driveway, keys in the lockbox."</div>
+                    </div>
+                    <div class="config-input-wrap" style="flex:1;max-width:340px">
+                        <input type="text" name="dropOffNotes" value="<%= config.dropOffNotes || '' %>" placeholder="Optional" style="width:100%">
+                    </div>
+                </div>
+
+                <div class="config-field">
+                    <div class="config-field-info">
+                        <div class="config-field-name">Drop-off discount</div>
+                        <div class="config-field-desc">How much cheaper it is when they bring it to you. Comes off before any discount code and before tax. Approve customers under Trusted Customers.</div>
+                    </div>
+                    <div class="config-input-wrap">
+                        <input type="number" name="dropOffDiscountValue" value="<%= config.dropOffDiscountValue %>" min="0" step="0.01" required>
+                        <select name="dropOffDiscountType" style="margin-left:8px">
+                            <option value="percent" <%= config.dropOffDiscountType !== 'fixed' ? 'selected' : '' %>>% off</option>
+                            <option value="fixed" <%= config.dropOffDiscountType === 'fixed' ? 'selected' : '' %>>$ off</option>
+                        </select>
                     </div>
                 </div>
             </div>

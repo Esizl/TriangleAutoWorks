@@ -210,7 +210,7 @@ async function seed() {
 
     const mongoose = require('mongoose')
     const VehicleSpec = require('../models/VehicleSpec')
-    const { mongoUri } = require('../config/config.json').server
+    const mongoUri = require('../config/mongoUri').getMongoUri()
 
     await mongoose.connect(mongoUri)
     console.log('Connected to MongoDB.')

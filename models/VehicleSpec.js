@@ -75,6 +75,33 @@ const VehicleSpecSchema = new mongoose.Schema({
 // once per make/model, enforced by the unique index below).
 VehicleSpecSchema.index({ make: 1, model: 1, year: 1 }, { unique: true })
 
+/**
+ * The spec entry that applies to one vehicle, or null: an entry for the
+ * exact year wins, then an entry covering a run of years that includes
+ * it (year..yearEnd), then the model-level default (year: null).
+ * Used by the booking form (/api/vehicle-specs) and by the server-side
+ * price check, so both always price from the same entry.
+ */
+VehicleSpecSchema.statics.resolveFor = async function (make, model, year) {
+    const yearNum = parseInt(year, 10)
+    let spec = null
+    if (!isNaN(yearNum)) {
+        spec = await this.findOne({ make, model, year: yearNum, yearEnd: null }).lean()
+        if (!spec) {
+            spec = await this.findOne({
+                make,
+                model,
+                year: { $lte: yearNum },
+                yearEnd: { $gte: yearNum }
+            }).sort({ year: -1 }).lean()
+        }
+    }
+    if (!spec) {
+        spec = await this.findOne({ make, model, year: null }).lean()
+    }
+    return spec
+}
+
 const VehicleSpec = mongoose.model('VehicleSpec', VehicleSpecSchema)
 
 module.exports = VehicleSpec

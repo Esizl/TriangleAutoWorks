@@ -328,7 +328,7 @@
             <div class="status-control">
                 <span id="statusSaved">Saved</span>
                 <div class="status-select-wrap">
-                    <select id="statusSelect" class="<%= booking.status %>">
+                    <select id="statusSelect" class="<%= booking.status %>" data-booking-id="<%= booking._id %>" data-current="<%= booking.status %>">
                         <% ['new','contacted','confirmed','completed','cancelled'].forEach(s => { %>
                             <option value="<%= s %>" <%= booking.status === s ? 'selected' : '' %>><%= s.charAt(0).toUpperCase() + s.slice(1) %></option>
                         <% }) %>
@@ -413,7 +413,7 @@
             </div>
         </div>
 
-        <% const hasTechSheet = ['Automotive', 'Detailing'].includes(booking.category) && booking.pricing && booking.pricing.total != null; %>
+        <% const hasTechSheet = ['Automotive', 'Detailing', 'Tint'].includes(booking.category) && booking.pricing && booking.pricing.total != null; %>
         <% if (hasTechSheet) { %>
         <div class="section">
             <div class="section-title">Tech sheet</div>
@@ -426,7 +426,7 @@
                         </div>
                     <% } %>
                 <% }) %>
-                <% if (booking.category === 'Detailing') { %>
+                <% if (booking.category === 'Detailing' || booking.category === 'Tint') { %>
                     <% Object.entries(booking.serviceNotes || {}).forEach(([svc, answers]) => { %>
                         <% Object.entries(answers || {}).forEach(([question, answer]) => { %>
                             <div class="mileage-flag">
@@ -434,9 +434,9 @@
                             </div>
                         <% }) %>
                     <% }) %>
-                    <% if (booking.pricing.estimatedHours) { %>
-                        <div class="mileage-flag">Estimated time on site: <%= booking.pricing.estimatedHours %> hrs</div>
-                    <% } %>
+                <% } %>
+                <% if (booking.pricing.estimatedHours) { %>
+                    <div class="mileage-flag">Estimated work time: <%= Math.round(booking.pricing.estimatedHours * 100) / 100 %> hrs</div>
                 <% } %>
                 <% (booking.parts || []).forEach(p => { %>
                     <div class="tech-line">
@@ -502,6 +502,17 @@
             </div>
         </div>
 
+        <% if (booking.customerChanges && booking.customerChanges.length) { %>
+        <div class="section">
+            <div class="section-title">Changes made by the customer</div>
+            <div class="notes-card">
+                <% booking.customerChanges.forEach(c => { %>
+                    <div><%= new Date(c.at).toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) %> — <%= c.detail %></div>
+                <% }) %>
+            </div>
+        </div>
+        <% } %>
+
         <% if (booking.notes) { %>
         <div class="section">
             <div class="section-title">Customer notes</div>
@@ -513,21 +524,43 @@
     <script>
         const select = document.getElementById('statusSelect');
         const saved = document.getElementById('statusSaved');
+        const bookingId = select.dataset.bookingId;
+        let currentStatus = select.dataset.current;
+
+        function showStatus(status) {
+            select.value = status;
+            select.className = status;
+        }
+
+        async function saveStatus(status, force) {
+            const res = await fetch('/api/booking/' + bookingId + '/status', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status, force })
+            });
+            const body = await res.json().catch(() => ({}));
+
+            // Confirming this would overlap another confirmed job — ask first.
+            if (res.status === 409 && body.conflict && !force) {
+                if (window.confirm(body.error + '\n\nConfirm it anyway?')) return saveStatus(status, true);
+                showStatus(currentStatus);
+                return;
+            }
+            if (!res.ok) throw new Error(body.error || 'Update failed');
+
+            currentStatus = status;
+            saved.classList.add('show');
+            setTimeout(() => saved.classList.remove('show'), 1800);
+        }
 
         select.addEventListener('change', async () => {
             const status = select.value;
             select.className = status;
             try {
-                const res = await fetch('/api/booking/<%= booking._id %>/status', {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status })
-                });
-                if (!res.ok) throw new Error('Update failed');
-                saved.classList.add('show');
-                setTimeout(() => saved.classList.remove('show'), 1800);
+                await saveStatus(status, false);
             } catch (err) {
-                alert('Could not save status change. Try again.');
+                showStatus(currentStatus);
+                alert('Could not save the status change: ' + err.message);
             }
         });
     </script>

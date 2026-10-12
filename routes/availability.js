@@ -1,71 +1,35 @@
 const router = require('express').Router()
-const Booking = require('../models/Booking')
-
-// ── Capacity config ──
-// Cap is per (date, window) pair. "Flexible — any time works" is its own
-// pseudo-window with its own independent cap — it does NOT count against
-// or get blocked by the four time-of-day windows, and vice versa.
-//
-// Only 'confirmed' and 'completed' bookings count toward capacity.
-// 'new' and 'contacted' are unapproved quotes and must never block a
-// day/window for other customers.
-const WINDOW_CAPS = {
-    'Morning (8 AM – 11 AM)': 1,
-    'Midday (11 AM – 2 PM)': 1,
-    'Afternoon (2 PM – 5 PM)': 1,
-    'Evening (5 PM – 7 PM)': 1,
-    'Flexible — any time works': 1
-}
-
-const BLOCKING_STATUSES = ['confirmed', 'completed']
+const scheduling = require('../services/scheduling')
 
 /**
- * GET /api/availability?start=YYYY-MM-DD&end=YYYY-MM-DD
+ * GET /api/availability?start=YYYY-MM-DD&end=YYYY-MM-DD&hours=3.5[&dropoff=1]
  *
- * Returns which (date, window) pairs are at/over capacity within the
- * given range, so the booking form can grey them out. Shape:
+ * Which time windows the booking calendar should grey out, for a job
+ * that takes `hours` of work. All the rules live in services/scheduling.js.
  *
- *   { "2026-07-01": ["Afternoon (2 PM – 5 PM)"], "2026-07-03": [...] }
+ *   {
+ *     "unavailable": { "2026-07-01": ["Afternoon (2 PM – 5 PM)"] },
+ *     "tooLate": ["Evening (5 PM – 7 PM)"]
+ *   }
  *
- * A date with no entry means every window is open. A date present in
- * the response only lists the FULL windows for that date — windows not
- * listed are still open that day (per-window granularity, not whole-day).
+ * unavailable: per date, the windows already taken. A date that isn't
+ *              listed is wide open.
+ * tooLate:     windows this job couldn't finish in — the same every day.
+ * dropoff=1:   the vehicle comes to us, so no travel time is added.
  */
 router.get('/', async (req, res) => {
     try {
-        const { start, end } = req.query
+        const { start, end, hours } = req.query
 
-        if (!start || !end) {
+        if (!scheduling.isValidDate(start) || !scheduling.isValidDate(end)) {
             return res.status(400).json({ error: 'start and end query params are required (YYYY-MM-DD)' })
         }
+        // A month at a time is all the calendar ever asks for.
+        if (Date.parse(end) - Date.parse(start) > 62 * 24 * 60 * 60 * 1000 || end < start) {
+            return res.status(400).json({ error: 'Date range too large.' })
+        }
 
-        const bookings = await Booking.find({
-            preferredDate: { $gte: start, $lte: end },
-            status: { $in: BLOCKING_STATUSES }
-        }).select('preferredDate preferredTime status')
-
-        // Count confirmed+ bookings per (date, window)
-        const counts = {} // { "2026-07-01": { "Afternoon (2 PM – 5 PM)": 1 } }
-        bookings.forEach(b => {
-            const date = b.preferredDate
-            const window = b.preferredTime
-            if (!date || !window) return
-            if (!(window in WINDOW_CAPS)) return // ignore any legacy/unexpected window string
-
-            if (!counts[date]) counts[date] = {}
-            counts[date][window] = (counts[date][window] || 0) + 1
-        })
-
-        // Reduce to only the FULL windows per date
-        const full = {}
-        Object.entries(counts).forEach(([date, windows]) => {
-            const fullWindows = Object.entries(windows)
-                .filter(([window, count]) => count >= (WINDOW_CAPS[window] ?? 1))
-                .map(([window]) => window)
-            if (fullWindows.length > 0) full[date] = fullWindows
-        })
-
-        res.json(full)
+        res.json(await scheduling.getAvailability(start, end, hours, { dropOff: req.query.dropoff === '1' }))
     } catch (err) {
         console.error('Error fetching availability:', err)
         res.status(500).json({ error: 'Failed to fetch availability' })

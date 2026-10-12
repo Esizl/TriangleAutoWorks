@@ -1,4 +1,5 @@
 const router = require('express').Router()
+const { limitForm } = require('../config/rateLimits')
 const bcrypt = require('bcryptjs')
 const passport = require('passport')
 
@@ -6,7 +7,7 @@ const User = require('../models/User')
 const verification = require('../services/emailVerification')
 const { isEmailConfigured } = require('../services/email')
 
-router.post('/signup', async (req, res) => {
+router.post('/signup', limitForm('signup', { fallback: '/signup' }), async (req, res) => {
     const name = String(req.body.name || '').trim()
     const email = String(req.body.email || '').trim()
     const phone = String(req.body.phone || '').trim()
@@ -71,7 +72,7 @@ router.post('/signup', async (req, res) => {
     }
 })
 
-router.post('/login', async (req, res, next) => {
+router.post('/login', limitForm('login', { flashKey: 'error', fallback: '/login' }), async (req, res, next) => {
     passport.authenticate('local', {
         successRedirect: '/',
         failureRedirect: '/login',

@@ -1,9 +1,5 @@
 const mongoose = require('mongoose')
-
-const currentTime = Date.now()
-const date = new Date(currentTime)
-const estOffset = -5 * 60 // EST is UTC-5, in minutes
-const estDate = new Date(date.getTime() + (estOffset * 60 * 1000))
+const crypto = require('crypto')
 
 // ── Sub-schemas mirroring buildAdminPayload() in configurator.js ──
 
@@ -74,7 +70,7 @@ const BookingSchema = new mongoose.Schema({
         taxRate: Number,
         tax: Number,                // charged on subtotal minus discount
         total: Number,
-        estimatedHours: Number      // Detailing: time on site
+        estimatedHours: Number      // hours of work — also drives which time windows the job blocks
     },
     flags: {
         hasPlaceholderPricing: Boolean,
@@ -115,9 +111,25 @@ const BookingSchema = new mongoose.Schema({
         default: 'new'
     },
 
+    // ── Customer self-service ──
+    // Random secret behind the "Manage your booking" link in the
+    // confirmation email (/booking/manage/<token>). Whoever has the link
+    // can view, cancel or reschedule this one booking — no login needed.
+    manageToken: { type: String, index: true, sparse: true },
+    // Cancels / reschedules the customer made themselves, newest last.
+    customerChanges: [{
+        _id: false,
+        at: { type: Date, default: Date.now },
+        action: String,   // 'cancelled' | 'rescheduled'
+        detail: String
+    }],
+
+    // When the booking was submitted. (This used to be worked out once,
+    // when the server started, so every booking got the server's start
+    // time instead of its own.)
     createdAt: {
         type: Date,
-        default: () => estDate.toLocaleString('en-US', { timeZone: 'America/New_York' })
+        default: Date.now
     }
 })
 
@@ -129,7 +141,23 @@ function phoneKeyOf(phone) {
 
 BookingSchema.pre('validate', function () {
     this.phoneKey = phoneKeyOf(this.contact && this.contact.phone)
+    if (!this.manageToken) this.manageToken = crypto.randomBytes(24).toString('hex')
 })
+
+/** Statuses a customer may still cancel or reschedule from. */
+BookingSchema.statics.OPEN_STATUSES = ['new', 'contacted', 'confirmed']
+
+/**
+ * Gives a booking saved before manage links existed its token.
+ * Returns the token either way.
+ */
+BookingSchema.methods.ensureManageToken = async function () {
+    if (!this.manageToken) {
+        this.manageToken = crypto.randomBytes(24).toString('hex')
+        await this.constructor.updateOne({ _id: this._id }, { $set: { manageToken: this.manageToken } })
+    }
+    return this.manageToken
+}
 
 /**
  * Mongo filter for "this account's bookings": ones made while logged in,

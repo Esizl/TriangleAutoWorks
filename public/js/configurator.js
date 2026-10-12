@@ -44,8 +44,24 @@ const LABOR_RATES = {
     diagnostic: { hours: 0.15, label: "Diagnostic Labor" } // ~10-20 min actual scan time
 };
 
-const LABOR_RATE_PER_HOUR = 40;
-const TAX_RATE = 0.07;
+// Labor rate, tax rate and the diagnostic trip charge are set in
+// Admin > Site > Business Config and arrive through /js/businessConfig.js.
+// No fallback numbers here on purpose: a quote built on a guessed rate is
+// worse than a page that visibly fails.
+if (!window.BUSINESS_CONFIG) {
+    throw new Error('businessConfig.js did not load — pricing settings are missing, so no estimate can be built.');
+}
+const LABOR_RATE_PER_HOUR = window.BUSINESS_CONFIG.laborRatePerHour;
+const TAX_RATE = window.BUSINESS_CONFIG.taxRate;
+
+// "Bring it to us": approved customers drop the vehicle off instead of
+// us driving out, for a lower price (Admin > Site > Business Config).
+const DROP_OFF_LOCATION = 'Drop-off';
+
+/** "Tax (7.75%)" — the label always shows the rate actually charged. */
+function formatTaxLabel() {
+    return `Tax (${Number((TAX_RATE * 100).toFixed(3))}%)`;
+}
 
 /**
  * Diagnostic Service pricing logic:
@@ -59,7 +75,7 @@ const TAX_RATE = 0.07;
  *    as a flat trip charge (driving out just to run a scan), not as
  *    labor for the scan itself.
  */
-const DIAGNOSTIC_STANDALONE_TRIP_CHARGE = 100;
+const DIAGNOSTIC_STANDALONE_TRIP_CHARGE = window.BUSINESS_CONFIG.diagnosticStandaloneFee;
 
 /**
  * Pull vehicle specs for the currently selected vehicle, falling back to
@@ -121,7 +137,7 @@ function buildConfiguratorHTML() {
 
     // Detailing has its own option cards (detailingConfigurator.js) but
     // shares this container, the estimate card and the admin payload.
-    if (state.category === 'Detailing') {
+    if (usesDetailingEngine(state.category)) {
         container.innerHTML = buildDetailingConfiguratorHTML();
         return;
     }
@@ -407,13 +423,43 @@ function buildLineItem(label, partRecord, qty, unitLabel) {
  * stay in sync.
  */
 function computeEstimate() {
-    // Any discount code (discount.js) comes off the finished estimate,
-    // so it works the same for every category.
-    return applyDiscountToEstimate(computeBaseEstimate());
+    // The drop-off discount comes off first, then any discount code
+    // (discount.js) comes off what's left — same for every category.
+    return applyDiscountToEstimate(applyDropOffDiscount(computeBaseEstimate()));
+}
+
+/**
+ * Takes the drop-off discount off an estimate when the customer chose
+ * "Bring it to us". It's a negative line on the estimate so it shows up
+ * everywhere the lines do (estimate card, invoice, tech sheet).
+ * Only approved customers ever see that option, and the server refuses
+ * a drop-off from anyone else before pricing it.
+ */
+function applyDropOffDiscount(estimate) {
+    if (state.locationType !== DROP_OFF_LOCATION || !(estimate.subtotal > 0)) return estimate;
+
+    const { dropOffDiscountType: type, dropOffDiscountValue: value } = window.BUSINESS_CONFIG;
+    const raw = type === 'percent' ? estimate.subtotal * value / 100 : value;
+    const amount = Math.round(Math.min(raw, estimate.subtotal) * 100) / 100;
+    if (!(amount > 0)) return estimate;
+
+    estimate.laborItems.push({
+        label: `Drop-off discount — you bring it to us${type === 'percent' ? ` (${value}% off)` : ''}`,
+        hours: 0,
+        rate: null,
+        cost: -amount,
+        isDropOffDiscount: true
+    });
+    estimate.laborSubtotal -= amount;
+    estimate.subtotal -= amount;
+    estimate.tax = estimate.subtotal * TAX_RATE;
+    estimate.total = estimate.subtotal + estimate.tax;
+    estimate.dropOffDiscount = amount;
+    return estimate;
 }
 
 function computeBaseEstimate() {
-    if (state.category === 'Detailing') return computeDetailingEstimate();
+    if (usesDetailingEngine(state.category)) return computeDetailingEstimate();
 
     const specs = resolveVehicleSpecs();
     const vehicle = currentVehicle();
@@ -639,9 +685,52 @@ function computeBaseEstimate() {
     };
 }
 
-/** Categories that have a configurator + priced estimate (Tint doesn't yet). */
+/**
+ * Has the customer answered everything this Automotive service needs
+ * before it can be priced? Used by the Step 3 validation in booking.js
+ * and by the server (priceEngine.js), which refuses a booking whose
+ * selected services aren't fully configured.
+ */
+function isServiceConfigComplete(serviceName) {
+    const serviceId = getServiceIdForDisplayName(serviceName);
+    if (!serviceId) return true; // no configurator needed (e.g. detailing/tint items)
+
+    const sel = state.selectedParts[serviceName] || {};
+
+    if (serviceId === 'oil_change') {
+        const blockCheck = (typeof isOilChangeBlocked === 'function')
+            ? isOilChangeBlocked(state.selectedMake, state.selectedModel)
+            : { blocked: false };
+        if (blockCheck.blocked) return true; // nothing to configure, service is disabled
+        return !!(sel.oilBrand && sel.filterBrand);
+    }
+    if (serviceId === 'brakes') return !!(sel.axle && sel.padType && sel.rotors);
+    if (serviceId === 'tires') return !!sel.serviceType;
+    if (serviceId === 'diagnostic') return !!sel.type;
+
+    return true;
+}
+
+/** Everything still unanswered for the current category, as display names. */
+function getIncompleteServices() {
+    if (usesDetailingEngine(state.category)) return getDetailingIncomplete();
+    return state.services.filter(name => !isServiceConfigComplete(name));
+}
+
+/**
+ * Hours of work in an estimate — what the calendar and the server use to
+ * decide which time windows a job needs. Detailing / Tint carry a total;
+ * Automotive is the sum of its labor lines.
+ */
+function getEstimateHours(estimate) {
+    if (!estimate) return 0;
+    if (typeof estimate.totalHours === 'number') return estimate.totalHours;
+    return (estimate.laborItems || []).reduce((sum, li) => sum + (li.hours || 0), 0);
+}
+
+/** Categories that have a configurator + priced estimate (all three now). */
 function categoryHasEstimate(category) {
-    return category === 'Automotive' || category === 'Detailing';
+    return category === 'Automotive' || usesDetailingEngine(category);
 }
 
 /**
@@ -650,6 +739,7 @@ function categoryHasEstimate(category) {
  */
 function formatEstimateLinePrice(li) {
     if (li.isQuote) return 'Quoted on site';
+    if (li.cost < 0) return `−$${(-li.cost).toFixed(2)}`;
     return `${li.isFromPrice ? 'From ' : ''}$${li.cost.toFixed(2)}`;
 }
 
@@ -668,7 +758,7 @@ function renderEstimateCard() {
     const totalEl = document.getElementById('partsEstimateTotal');
     if (!listEl || !totalEl) return;
 
-    const isDetailing = state.category === 'Detailing';
+    const isDetailing = usesDetailingEngine(state.category);
     const headerEl = document.getElementById('estimateHeader');
     const totalLabelEl = document.getElementById('estimateTotalLabel');
     if (headerEl) headerEl.textContent = isDetailing ? 'Your Estimate' : 'Estimated Parts';
@@ -703,8 +793,8 @@ function renderEstimateCard() {
 
     estimate.laborItems.forEach(li => {
         let hoursLabel;
-        if (estimate.kind === 'detailing') {
-            hoursLabel = ''; // time is shown once, as a total, below
+        if (estimate.kind === 'detailing' || li.isDropOffDiscount) {
+            hoursLabel = ''; // detailing time is shown once, as a total, below
         } else if (li.isTripCharge) {
             hoursLabel = ' — flat trip charge, mostly covers the drive-out';
         } else if (li.isComplimentary) {
@@ -730,7 +820,7 @@ function renderEstimateCard() {
             <span class="estimate-line-price">−$${estimate.discountAmount.toFixed(2)}</span>
         </div>` : ''}
         <div class="estimate-line-item">
-            <span class="estimate-line-label">Tax (7%)</span>
+            <span class="estimate-line-label">${formatTaxLabel()}</span>
             <span class="estimate-line-price">$${estimate.tax.toFixed(2)}</span>
         </div>
     `;
@@ -784,7 +874,7 @@ function buildAdminPayload() {
             taxRate: estimate.taxRate,
             tax: estimate.tax,
             total: estimate.total,
-            estimatedHours: estimate.totalHours ?? null // Detailing only
+            estimatedHours: getEstimateHours(estimate) || null // hours of work, all categories
         },
         flags: {
             hasPlaceholderPricing: estimate.hasPlaceholderPricing,
@@ -809,6 +899,12 @@ function refreshConfiguratorAndEstimate() {
 window.refreshConfiguratorAndEstimate = refreshConfiguratorAndEstimate;
 window.buildAdminPayload = buildAdminPayload;
 window.computeEstimate = computeEstimate;
+window.applyDropOffDiscount = applyDropOffDiscount;
+window.DROP_OFF_LOCATION = DROP_OFF_LOCATION;
+window.getEstimateHours = getEstimateHours;
+window.isServiceConfigComplete = isServiceConfigComplete;
+window.getIncompleteServices = getIncompleteServices;
+window.formatTaxLabel = formatTaxLabel;
 window.computeBaseEstimate = computeBaseEstimate;
 window.categoryHasEstimate = categoryHasEstimate;
 window.formatEstimateLinePrice = formatEstimateLinePrice;

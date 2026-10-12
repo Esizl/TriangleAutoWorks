@@ -1,4 +1,5 @@
 const router = require('express').Router()
+const { limitForm } = require('../config/rateLimits')
 const crypto = require('crypto')
 const bcrypt = require('bcryptjs')
 const User = require('../models/User')
@@ -36,7 +37,7 @@ router.get('/forgot-password', (req, res) => {
     res.render('forgot-password')
 })
 
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', limitForm('passwordReset', { fallback: '/forgot-password' }), async (req, res) => {
     const email = String(req.body.email || '').trim()
 
     if (!email) {
@@ -104,7 +105,7 @@ router.get('/reset-password/:token', async (req, res) => {
     }
 })
 
-router.post('/reset-password/:token', async (req, res) => {
+router.post('/reset-password/:token', limitForm('passwordReset', { fallback: '/forgot-password' }), async (req, res) => {
     const { password, password2 } = req.body
     const backToForm = `/reset-password/${encodeURIComponent(req.params.token)}`
 

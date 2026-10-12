@@ -96,6 +96,19 @@ function getDetailingSite() {
     return site;
 }
 
+/** Categories priced by this engine: Detailing and Tint (tintCatalog.js). */
+function usesDetailingEngine(category) {
+    return category === 'Detailing' || category === 'Tint';
+}
+
+/** The once-per-booking site questions for the current category. */
+function getSiteQuestions() {
+    // At our place there's water, power and cover — nothing to ask.
+    if (state.locationType === 'Drop-off') return [];
+    if (state.category === 'Tint') return (typeof TINT_SITE_QUESTIONS !== 'undefined') ? TINT_SITE_QUESTIONS : [];
+    return DETAILING_SITE_QUESTIONS;
+}
+
 // ── OVERLAP / AVAILABILITY RULES ──
 
 /**
@@ -161,7 +174,7 @@ function getDetailingIncomplete() {
     const missing = [];
 
     if (!site.size) missing.push('Vehicle Size');
-    DETAILING_SITE_QUESTIONS.forEach(q => {
+    getSiteQuestions().forEach(q => {
         if (!site[q.key]) missing.push(q.noteLabel);
     });
     state.services.forEach(name => {
@@ -228,7 +241,7 @@ function buildDetailingSiteCardHTML() {
             'Three-row SUVs, trucks and minivans count as Large.'
         );
 
-    const siteFields = DETAILING_SITE_QUESTIONS.map(q => dtSelectField(
+    const siteFields = getSiteQuestions().map(q => dtSelectField(
         DETAILING_SITE_KEY, q.key, q.label, 'Select one',
         [{ id: 'yes', label: 'Yes' }, { id: 'no', label: 'No' }],
         site[q.key],
@@ -347,7 +360,7 @@ function computeDetailingEstimate() {
         siteNote['Vehicle size'] = dtSizeLabel(size) +
             (site.sizeSource === 'vehicle' ? '' : ' (picked by customer — no size on file for this model, verify on site)');
     }
-    DETAILING_SITE_QUESTIONS.forEach(q => {
+    getSiteQuestions().forEach(q => {
         if (!site[q.key]) return;
         siteNote[q.noteLabel] = site[q.key] === 'yes' ? 'Yes' : 'No';
         if (site[q.key] === 'no') toolsNeeded.add(q.toolIfNo);
@@ -370,6 +383,8 @@ function computeDetailingEstimate() {
         if (pricing.type === 'sized') {
             pushLine(serviceName + sizeSuffix, pricing.prices[size], baseHours);
             if (size !== 'car') markPlaceholder();
+            // Tint's mid / large prices are derived, not hand-set, until confirmed.
+            if (size !== 'car' && svc.pricingConfirmed === false) hasPlaceholderPricing = true;
         } else if (pricing.type === 'flat') {
             pushLine(serviceName, pricing.price, baseHours);
         } else if (pricing.type === 'from') {
@@ -449,12 +464,13 @@ function getDetailingSidebarText() {
 
     const parts = [`${formatDetailingDuration(estimate.totalHours)} on site`];
     const site = estimate.serviceNotes[DETAILING_SITE_KEY] || {};
-    DETAILING_SITE_QUESTIONS.forEach(q => {
+    getSiteQuestions().forEach(q => {
         if (site[q.noteLabel] === 'No') parts.push(`${q.noteLabel}: No`);
     });
     return parts.join(' • ');
 }
 
+window.usesDetailingEngine = usesDetailingEngine;
 window.getDetailingBlock = getDetailingBlock;
 window.onDetailingServiceSelected = onDetailingServiceSelected;
 window.isDetailingServiceConfigComplete = isDetailingServiceConfigComplete;

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= page === 'privacy' ? 'Privacy Policy' : 'Terms of Service' %> — Triangle Auto Works</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/pages.css">
+</head>
+<body>
+    <nav>
+        <a href="/" class="nav-logo">
+            <svg width="36" height="36" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="20,2 38,36 2,36" fill="none" stroke="#C8102E" stroke-width="2.5" />
+                <text x="20" y="32" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="18" fill="#C0C0C0">TA</text>
+            </svg>
+            <div class="nav-wordmark">Triangle<span>Auto Works</span></div>
+        </a>
+        <a href="/" class="nav-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Home
+        </a>
+    </nav>
+
+    <%# ─────────────────────────────────────────────────────────────────
+        OWNER: these two pages describe what the site actually does today,
+        but they are a starting template, not legal advice. Read them
+        through, change anything that isn't how you run the business
+        (payment, cancellation and warranty wording especially), and
+        update LAST_UPDATED whenever you edit them.
+    ───────────────────────────────────────────────────────────────── %>
+    <% const LAST_UPDATED = 'October 11, 2026'; %>
+
+    <div class="shell">
+        <div class="page-eyebrow">Triangle Auto Works</div>
+
+        <% if (page === 'privacy') { %>
+            <h1 class="page-title">Privacy Policy</h1>
+            <div class="red-rule"></div>
+            <div class="prose">
+                <p class="updated">Last updated <%= LAST_UPDATED %></p>
+
+                <p>Triangle Auto Works is a mobile auto detailing, tint and maintenance business serving the Raleigh, NC area. This page explains what information this website collects, why, and what you can do about it.</p>
+
+                <h2>What we collect</h2>
+                <ul>
+                    <li><strong>When you book:</strong> your name, phone number, email address (optional), the address where you want the service done, your vehicle's make, model and year (or its VIN), the services you chose, and any notes you add.</li>
+                    <li><strong>When you create an account:</strong> your name, email address, phone number and password. Passwords are stored scrambled (hashed) — we can't read them. If you add a passkey, we store its public key, never anything secret from your device.</li>
+                    <li><strong>When you leave a review:</strong> your rating and comments, shown on the site with your first name and last initial once approved.</li>
+                    <li><strong>Automatically:</strong> your IP address, briefly, to stop abuse such as repeated password guessing.</li>
+                </ul>
+
+                <h2>How we use it</h2>
+                <ul>
+                    <li>To schedule and carry out the work you asked for, and to prepare the right parts and tools.</li>
+                    <li>To contact you about your booking by phone, text or email.</li>
+                    <li>To send account emails you trigger yourself: verification codes, password resets, booking confirmations.</li>
+                    <li>To show your order history when you're logged in.</li>
+                </ul>
+                <p>We don't sell your information, and we don't use it for advertising.</p>
+
+                <h2>Cookies</h2>
+                <p>The site uses one cookie, which keeps you logged in and remembers where you are in a form. There are no advertising or tracking cookies.</p>
+
+                <h2>Who else handles it</h2>
+                <p>A few companies process information for us so the site can work. They only get what they need for that job:</p>
+                <ul>
+                    <li><strong>MongoDB Atlas</strong> stores the site's database (bookings and accounts).</li>
+                    <li><strong>Railway</strong> hosts the website.</li>
+                    <li><strong>Resend</strong> delivers our emails, so it receives your email address and the contents of those emails.</li>
+                    <li><strong>NHTSA</strong> (the U.S. National Highway Traffic Safety Administration) decodes a VIN if you enter one. Only the VIN is sent.</li>
+                    <li><strong>Google Fonts</strong> serves the site's typefaces, so your browser contacts Google when a page loads.</li>
+                </ul>
+                <p>We may also share information if the law requires it.</p>
+
+                <h2>How long we keep it</h2>
+                <p>Booking records are kept as part of our business records. Account information is kept until you ask us to delete your account. Verification codes and password reset links expire on their own within an hour.</p>
+
+                <h2>Your choices</h2>
+                <ul>
+                    <li>Change your name, email, phone number or password any time under Account Settings.</li>
+                    <li>Ask us what we hold about you, or ask us to correct or delete it, by calling or texting the number below.</li>
+                    <li>You can book without an account, and without giving an email address.</li>
+                </ul>
+
+                <h2>Children</h2>
+                <p>This site is for adults arranging service for a vehicle. We don't knowingly collect information from children under 13.</p>
+
+                <h2>Changes</h2>
+                <p>If this policy changes, the new version will be posted here with a new date.</p>
+
+                <h2>Contact</h2>
+                <p>Triangle Auto Works · Raleigh, NC · Call or text <a href="tel:+17326478703">732-647-8703</a></p>
+            </div>
+        <% } else { %>
+            <h1 class="page-title">Terms of Service</h1>
+            <div class="red-rule"></div>
+            <div class="prose">
+                <p class="updated">Last updated <%= LAST_UPDATED %></p>
+
+                <p>These terms apply when you use this website to book a service with Triangle Auto Works. By booking, you agree to them.</p>
+
+                <h2>Bookings are requests</h2>
+                <p>Submitting the booking form sends us a request. Your appointment isn't final until we confirm it with you by phone, text or email. Occasionally we may need to suggest a different time, or decline a request we can't safely or properly do as a mobile service.</p>
+
+                <h2>Estimates</h2>
+                <p>Prices shown while you book are estimates based on the vehicle and options you selected. The final price can change if the vehicle's condition, the parts it needs or the work involved turn out to be different. Items marked "quoted on site" or "from" are priced before any work starts. We'll always tell you the price and get your OK before doing work that costs more than the estimate.</p>
+
+                <h2>Cancelling and rescheduling</h2>
+                <p>You can cancel or reschedule from the link in your confirmation email (or from your order history) up to 24 hours before your appointment. Inside 24 hours, call or text us.</p>
+
+                <h2>What we need from you</h2>
+                <ul>
+                    <li>Accurate vehicle and contact details, and a correct service address.</li>
+                    <li>The vehicle, and its keys if needed, available at the agreed time, somewhere we can safely and legally work on it.</li>
+                    <li>Honest answers to the booking questions (vehicle condition, water and power on site and so on) — they decide what we bring and how long we plan for.</li>
+                    <li>Personal belongings removed from the vehicle before detailing.</li>
+                </ul>
+
+                <h2>Accounts</h2>
+                <p>You're responsible for keeping your password to yourself and for what happens under your account. Tell us if you think someone else has used it.</p>
+
+                <h2>Reviews</h2>
+                <p>Reviews are checked before they're published. We may decline to publish, or later remove, a review that is abusive, off-topic or not about a real booking.</p>
+
+                <h2>Discount codes</h2>
+                <p>Discount codes have their own conditions (first-time customers only, minimum spend, expiry dates, number of uses). A code that doesn't meet its conditions when you book won't be applied.</p>
+
+                <h2>The website</h2>
+                <p>We try to keep the site accurate and available, but it's provided as-is. Service descriptions and prices can change without notice; a change never affects a booking we've already confirmed.</p>
+
+                <h2>Liability</h2>
+                <p>To the extent the law allows, our liability for any claim connected with a service is limited to the amount you paid for that service. Nothing here limits rights you have under North Carolina law that can't be waived.</p>
+
+                <h2>Governing law</h2>
+                <p>These terms are governed by the laws of the State of North Carolina.</p>
+
+                <h2>Contact</h2>
+                <p>Triangle Auto Works · Raleigh, NC · Call or text <a href="tel:+17326478703">732-647-8703</a></p>
+            </div>
+        <% } %>
+
+        <div class="page-footer">
+            <a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/booking">Book a service</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -2,7 +2,10 @@ const fs = require('fs')
 const path = require('path')
 const vm = require('vm')
 
-const BLOCKLIST_PATH = path.join(__dirname, 'public', 'js', 'oilChangeBlocklist.js')
+// All lowercase, matching the file's real name. On Windows the old
+// 'oilChangeBlocklist.js' spelling found it anyway; on the live (Linux)
+// server it didn't, so the blocklist never loaded there.
+const BLOCKLIST_PATH = path.join(__dirname, 'public', 'js', 'oilchangeblocklist.js')
 
 const FILE_HEADER = `/**
  * oilChangeBlocklist.js

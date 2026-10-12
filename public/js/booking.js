@@ -29,15 +29,8 @@ const serviceOptions = {
     // Names, prices and descriptions come from detailingCatalog.js so the
     // checkbox list and the configurator can never disagree.
     Detailing: getDetailingServiceOptions(),
-    Tint: [
-        { name: 'Standard Window Tint', price: 'From $180', desc: 'All side & rear windows' },
-        { name: 'Carbon Tint', price: 'From $250', desc: 'Heat reduction, carbon film finish' },
-        { name: 'Ceramic Tint', price: 'From $350', desc: 'Superior heat block, no signal interference' },
-        { name: 'Windshield Tint', price: 'From $150', desc: 'UV & glare reduction on front glass' },
-        { name: 'Tint Removal', price: 'From $75', desc: 'Safe film removal + adhesive cleanup' },
-        { name: 'Carbon + Windshield Bundle', price: 'Custom quote', desc: 'Carbon on all windows + windshield strip' },
-        { name: 'Ceramic + Windshield Bundle', price: 'Custom quote', desc: 'Ceramic all around + windshield' },
-    ],
+    // Same for Tint — tintCatalog.js.
+    Tint: getTintServiceOptions(),
     Automotive: [
         { name: 'Oil Change', price: 'From $65', desc: 'Up to 5 qts ARGOS oil + filter + fluid check' },
         { name: 'Premium Oil Change', price: 'From $75', desc: 'Pennzoil / Valvoline / Mobil 1' },
@@ -242,7 +235,28 @@ function selectLocation(loc, el) {
     state.locationType = loc;
     document.querySelectorAll('.location-card').forEach(c => c.classList.remove('selected'));
     el.classList.add('selected');
+
+    // "Bring it to us": no service address to type, show ours instead.
+    const isDropOff = loc === DROP_OFF_LOCATION;
+    const addressField = document.getElementById('f-address');
+    const dropOffInfo = document.getElementById('dropOffInfo');
+    if (addressField) addressField.style.display = isDropOff ? 'none' : '';
+    if (dropOffInfo) dropOffInfo.style.display = isDropOff ? '' : 'none';
+
+    // Drop-off changes the price (and drops the travel time), so the
+    // estimate and the calendar's open windows are worked out again.
+    if (categoryHasEstimate(state.category)) refreshConfiguratorAndEstimate();
+    if (typeof refreshCalendarAvailability === 'function') refreshCalendarAvailability();
     updateSidebar();
+}
+
+/** Where the work happens, as shown to the customer. */
+function serviceAddressText() {
+    if (state.locationType === DROP_OFF_LOCATION) {
+        const el = document.querySelector('#dropOffInfo .dropoff-info-address');
+        return el ? `You bring it to us: ${el.textContent.trim()}` : 'You bring it to us';
+    }
+    return document.getElementById('serviceAddress').value.trim();
 }
 
 // ── BUILD SERVICE OPTIONS (Step 3 checkbox grid) ──
@@ -252,6 +266,9 @@ function buildServiceOptions() {
     // for the selected vehicle each time (exact prices, not "From" prices).
     if (state.category === 'Detailing') {
         serviceOptions.Detailing = getDetailingServiceOptions(getVehicleSizeClass());
+    }
+    if (state.category === 'Tint') {
+        serviceOptions.Tint = getTintServiceOptions(getVehicleSizeClass());
     }
     const options = serviceOptions[state.category] || [];
     document.getElementById('step3-title').textContent = state.category + ' Services';
@@ -271,7 +288,7 @@ function buildServiceOptions() {
         // budget "Oil Change" option — "Premium Oil Change" still works.
         let disabledReason = null;
         let disabledPrefix = 'Not available for this vehicle — ';
-        if (state.category === 'Detailing') {
+        if (usesDetailingEngine(state.category)) {
             // Overlap rules (e.g. Full Detail already includes Interior
             // Detail) and packages that bundle a blocked oil change.
             const block = getDetailingBlock(o.name);
@@ -319,13 +336,13 @@ function toggleService(idx, el) {
 
     if (el.classList.contains('selected')) {
         state.services.push(name);
-        if (state.category === 'Detailing') onDetailingServiceSelected(name);
+        if (usesDetailingEngine(state.category)) onDetailingServiceSelected(name);
     } else {
         state.services = state.services.filter(s => s !== name);
         delete state.selectedParts[name];
     }
 
-    if (state.category === 'Detailing') {
+    if (usesDetailingEngine(state.category)) {
         // Selecting one detailing service can disable or swap out others,
         // so the whole grid is rebuilt (which also refreshes the
         // configurator + estimate).
@@ -377,8 +394,8 @@ function updateSidebar() {
     setSidebarItem('sb-work', state.services.length ? state.services.join('\n') : '');
 
     // Location
-    const addr = document.getElementById('serviceAddress').value.trim();
-    setSidebarItem('sb-location', state.locationType);
+    const addr = serviceAddressText();
+    setSidebarItem('sb-location', state.locationType === DROP_OFF_LOCATION ? 'Bring it to us' : state.locationType);
     document.getElementById('sb-address-val').textContent = addr;
 
     // DateTime
@@ -401,7 +418,7 @@ function updateSidebarServiceData() {
     const el = document.getElementById('sb-tools-val');
     if (!el) return;
 
-    if (state.category === 'Detailing' && state.services.length > 0) {
+    if (usesDetailingEngine(state.category) && state.services.length > 0) {
         el.textContent = getDetailingSidebarText();
         return;
     }
@@ -493,9 +510,7 @@ function validateStep(n) {
         } else if (categoryHasEstimate(state.category)) {
             // Make sure every selected service has its required
             // configurator options filled in before moving on.
-            const incomplete = state.category === 'Detailing'
-                ? getDetailingIncomplete()
-                : state.services.filter(name => !isServiceConfigComplete(name));
+            const incomplete = getIncompleteServices();
             if (incomplete.length > 0) {
                 ok = false;
                 alert(`Please finish configuring: ${incomplete.join(', ')}`);
@@ -505,7 +520,7 @@ function validateStep(n) {
 
     if (n === 4) {
         clearErrors('f-address', 'f-date', 'f-time');
-        if (!document.getElementById('serviceAddress').value.trim()) setError('f-address');
+        if (state.locationType !== DROP_OFF_LOCATION && !document.getElementById('serviceAddress').value.trim()) setError('f-address');
         if (!document.getElementById('preferredDate').value) setError('f-date');
         if (!document.getElementById('preferredTime').value) setError('f-time');
         if (!state.locationType) {
@@ -525,25 +540,8 @@ function validateStep(n) {
     return ok;
 }
 
-function isServiceConfigComplete(serviceName) {
-    const serviceId = getServiceIdForDisplayName(serviceName);
-    if (!serviceId) return true; // no configurator needed (e.g. detailing/tint items)
-
-    const sel = state.selectedParts[serviceName] || {};
-
-    if (serviceId === 'oil_change') {
-        const blockCheck = (typeof isOilChangeBlocked === 'function')
-            ? isOilChangeBlocked(state.selectedMake, state.selectedModel)
-            : { blocked: false };
-        if (blockCheck.blocked) return true; // nothing to configure, service is disabled
-        return !!(sel.oilBrand && sel.filterBrand);
-    }
-    if (serviceId === 'brakes') return !!(sel.axle && sel.padType && sel.rotors);
-    if (serviceId === 'tires') return !!sel.serviceType;
-    if (serviceId === 'diagnostic') return !!sel.type;
-
-    return true;
-}
+// isServiceConfigComplete() lives in configurator.js — the server-side
+// price check needs it too.
 
 // ── NAVIGATION ──
 function goToStep(n) {
@@ -598,7 +596,7 @@ function buildConfirmSummary() {
     const dt = document.getElementById('preferredDate').value;
     const dtFormatted = dt ? new Date(dt + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : '';
     const tm = document.getElementById('preferredTime').value;
-    const addr = document.getElementById('serviceAddress').value.trim();
+    const addr = serviceAddressText();
     const fn = document.getElementById('contactFirst').value.trim();
     const ln = document.getElementById('contactLast').value.trim();
     const ph = document.getElementById('contactPhone').value.trim();
@@ -621,7 +619,7 @@ function buildConfirmSummary() {
       </div>
       <div class="confirm-section">
         <div class="confirm-section-label">Logistics</div>
-        <div class="confirm-row"><span class="confirm-row-key">Location type</span><span class="confirm-row-val">${state.locationType}</span></div>
+        <div class="confirm-row"><span class="confirm-row-key">Location type</span><span class="confirm-row-val">${state.locationType === DROP_OFF_LOCATION ? 'Bring it to us (drop-off)' : state.locationType}</span></div>
         <div class="confirm-row"><span class="confirm-row-key">Address</span><span class="confirm-row-val">${addr}</span></div>
         <div class="confirm-row"><span class="confirm-row-key">Date</span><span class="confirm-row-val">${dtFormatted}</span></div>
         <div class="confirm-row"><span class="confirm-row-key">Time window</span><span class="confirm-row-val">${tm}</span></div>
@@ -690,7 +688,7 @@ function buildInvoicePreview() {
             <span class="confirm-row-val" style="color:#4ADE80">−$${estimate.discountAmount.toFixed(2)}</span>
         </div>` : ''}
         <div class="confirm-row">
-            <span class="confirm-row-key">Tax (7%)</span>
+            <span class="confirm-row-key">${formatTaxLabel()}</span>
             <span class="confirm-row-val">$${estimate.tax.toFixed(2)}</span>
         </div>
         <div class="confirm-row" style="font-weight:700;font-size:16px">
@@ -749,7 +747,8 @@ function buildBookingSubmission() {
         flags: adminPayload?.flags || null,
 
         locationType: state.locationType,
-        serviceAddress: document.getElementById('serviceAddress').value.trim(),
+        // The server fills in our address for a drop-off.
+        serviceAddress: state.locationType === DROP_OFF_LOCATION ? '' : document.getElementById('serviceAddress').value.trim(),
         preferredDate: document.getElementById('preferredDate').value,
         preferredTime: document.getElementById('preferredTime').value,
         firstTimeCustomer: document.getElementById('firstTime').value === 'yes',
@@ -787,6 +786,19 @@ async function submitBooking() {
 
         if (!res.ok) {
             const errBody = await res.json().catch(() => ({}));
+            if (errBody.slotTaken) {
+                // Someone else's booking was confirmed for this window
+                // while this page was open (or the job is too long for
+                // it). Back to the calendar, with fresh availability.
+                goToStep(4);
+                if (typeof refreshCalendarAvailability === 'function') refreshCalendarAvailability();
+                alert(errBody.error);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = btn.dataset.originalText;
+                }
+                return;
+            }
             if (errBody.discountInvalid) {
                 // The code stopped being valid between "Apply" and submit
                 // (expired, hit its limit…). Drop it, show the real
@@ -799,10 +811,28 @@ async function submitBooking() {
                 }
                 return;
             }
+            // 400s carry a specific, fixable reason — show it as-is.
+            if ((res.status === 400 || res.status === 429) && errBody.error) {
+                if (errEl) {
+                    errEl.textContent = errBody.error;
+                    errEl.style.display = 'block';
+                } else {
+                    alert(errBody.error);
+                }
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = btn.dataset.originalText;
+                }
+                return;
+            }
             throw new Error(errBody.error || 'Submission failed');
         }
 
+        const result = await res.json().catch(() => ({}));
         document.getElementById('invoiceData').value = JSON.stringify(payload);
+
+        const emailNote = document.getElementById('successEmailNote');
+        if (emailNote) emailNote.style.display = result.emailed ? '' : 'none';
 
         document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
         document.getElementById('step-success').classList.add('active');
@@ -826,10 +856,6 @@ async function submitBooking() {
 
 // ── VIN LOOKUP ──
 async function lookupVIN() {
-    function titleCase(str) {
-        return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-    }
-
     const vin = document.getElementById("vehicleVIN").value.trim().toUpperCase();
 
     if (vin.length !== 17) {
@@ -849,9 +875,15 @@ async function lookupVIN() {
 
         const data = await res.json();
 
+        state.cachedSpecs = null;
+        state.cachedSpecsKey = '';
+
+        // The server returns the site's own spelling of the make and model
+        // whenever the vehicle is in our list, so saved specs and the size
+        // class match. Re-casing them here ("BMW" -> "Bmw") used to break that.
         state.selectedYear = data.year;
-        state.selectedMake = titleCase(data.make);
-        state.selectedModel = titleCase(data.model);
+        state.selectedMake = data.make;
+        state.selectedModel = data.model;
         state.selectedType = data.vehicleType;
 
         fetchAndCacheSpecs();

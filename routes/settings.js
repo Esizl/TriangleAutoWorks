@@ -1,4 +1,5 @@
 const router = require('express').Router()
+const { limitForm } = require('../config/rateLimits')
 const bcrypt = require('bcryptjs')
 const { ensureAuthenticated } = require('../config/ensureAuth')
 const User = require('../models/User')
@@ -11,7 +12,7 @@ router.get('/', ensureAuthenticated, async (req, res) => {
 })
 
 // --- Update profile (name / email / phone) ---
-router.post('/profile', ensureAuthenticated, async (req, res) => {
+router.post('/profile', ensureAuthenticated, limitForm('settings', { fallback: '/settings' }), async (req, res) => {
     const { name, email, phone } = req.body
     const errors = []
 
@@ -74,7 +75,7 @@ router.post('/profile', ensureAuthenticated, async (req, res) => {
 })
 
 // --- Change password ---
-router.post('/password', ensureAuthenticated, async (req, res) => {
+router.post('/password', ensureAuthenticated, limitForm('settings', { fallback: '/settings' }), async (req, res) => {
     const { currentPassword, newPassword, newPassword2 } = req.body
     const errors = []
 

@@ -515,6 +515,27 @@
                                                                     </form>
                                                                 </div>
 
+                                                                <% if (isOwnerViewing) { %>
+                                                                <div class="panel">
+                                                                    <div class="panel-title">Drop-off ("Bring it to us")</div>
+                                                                    <div class="panel-sub">
+                                                                        <%= completedBookings %> completed booking<%= completedBookings === 1 ? '' : 's' %> under this phone number.
+                                                                        <% if (targetUser.trustedCustomer) { %>
+                                                                            Approved — when logged in, they can bring the vehicle to you for the drop-off price.
+                                                                        <% } else if (trustedByPhone) { %>
+                                                                            Approved through their phone number (Trusted Customers list).
+                                                                        <% } else { %>
+                                                                            Not approved. Approve trusted / close customers to let them bring the vehicle to you for less.
+                                                                        <% } %>
+                                                                    </div>
+                                                                    <form method="POST" action="/admin/site/trusted/account/<%= targetUser._id %>">
+                                                                        <input type="hidden" name="back" value="user">
+                                                                        <input type="hidden" name="trusted" value="<%= targetUser.trustedCustomer ? 'no' : 'yes' %>">
+                                                                        <button type="submit" class="btn btn-primary"><%= targetUser.trustedCustomer ? 'Remove approval' : 'Approve for drop-off' %></button>
+                                                                    </form>
+                                                                </div>
+                                                                <% } %>
+
                                                                 <% if (!isLockedFromStaff) { %>
                                                                     <% const
                                                                         resetConfirmMsg='Generate a new temporary password for '

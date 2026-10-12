@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <%# The address bar holds the private link; don't leak it to other sites. %>
+    <meta name="referrer" content="same-origin">
+    <title>Your Booking — Triangle Auto Works</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/pages.css">
+</head>
+<body>
+    <nav>
+        <a href="/" class="nav-logo">
+            <svg width="36" height="36" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="20,2 38,36 2,36" fill="none" stroke="#C8102E" stroke-width="2.5" />
+                <text x="20" y="32" text-anchor="middle" font-family="'Bebas Neue',sans-serif" font-size="18" fill="#C0C0C0">TA</text>
+            </svg>
+            <div class="nav-wordmark">Triangle<span>Auto Works</span></div>
+        </a>
+        <a href="/" class="nav-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Home
+        </a>
+    </nav>
+
+    <div class="shell">
+        <div class="page-eyebrow">Your booking</div>
+
+        <% if (!booking) { %>
+            <h1 class="page-title">Link Not Found</h1>
+            <div class="red-rule"></div>
+            <div class="card">
+                <div class="card-body">
+                    <p class="card-note">This booking link isn't valid. Check that you copied the whole link from your confirmation email.</p>
+                    <p class="card-note" style="margin-bottom:0">Need help? Call or text <a href="tel:+17326478703" style="color:var(--red)">732-647-8703</a>.</p>
+                </div>
+            </div>
+        <% } else { %>
+            <%
+                const hasTotal = booking.pricing && typeof booking.pricing.total === 'number';
+                const isOpenTotal = booking.flags && (booking.flags.isStartingPrice || booking.flags.hasQuoteItems);
+                const quotedOnly = !hasTotal || (booking.pricing.total === 0 && (!(booking.labor || []).length || isOpenTotal));
+            %>
+            <h1 class="page-title">Manage Booking</h1>
+            <div class="red-rule"></div>
+
+            <% if (typeof successMessage !== 'undefined' && successMessage && successMessage.length) { %>
+                <% successMessage.forEach(function(msg) { %>
+                    <div class="flash flash-success"><%= msg %></div>
+                <% }) %>
+            <% } %>
+            <% if (typeof errorMessage !== 'undefined' && errorMessage && errorMessage.length) { %>
+                <% errorMessage.forEach(function(msg) { %>
+                    <div class="flash flash-error"><%= msg %></div>
+                <% }) %>
+            <% } %>
+
+            <div class="card">
+                <div class="card-head">
+                    <div>
+                        <div class="card-title"><%= (booking.services || []).join(', ') %></div>
+                        <div class="card-meta"><%= booking.category %><%= vehicleName ? ' · ' + vehicleName : '' %></div>
+                    </div>
+                    <span class="pill is-<%= booking.status %>"><%= statusLabel %></span>
+                </div>
+                <div class="rows">
+                    <div class="row">
+                        <span class="row-key">Appointment</span>
+                        <span class="row-val"><%= formatDate(booking.preferredDate) %><br><%= booking.preferredTime %></span>
+                    </div>
+                    <div class="row">
+                        <span class="row-key"><%= isDropOff ? 'Bring it to' : 'Location' %></span>
+                        <span class="row-val"><%= booking.serviceAddress %></span>
+                    </div>
+                    <% if (booking.discount && booking.discount.code) { %>
+                        <div class="row">
+                            <span class="row-key">Discount</span>
+                            <span class="row-val"><%= booking.discount.code %> — <%= booking.discount.label %></span>
+                        </div>
+                    <% } %>
+                    <div class="row">
+                        <span class="row-key">Estimate</span>
+                        <span class="row-val total"><%= quotedOnly ? 'Quoted directly' : (isOpenTotal ? 'From ' : '') + '$' + booking.pricing.total.toFixed(2) %></span>
+                    </div>
+                </div>
+            </div>
+
+            <% if (booking.status === 'new' || booking.status === 'contacted') { %>
+                <p class="card-note">This is a request — we'll text or call to confirm the time, and email you once it's locked in.</p>
+            <% } %>
+
+            <% if (rules.allowed) { %>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="card-label">Pick a new time</div>
+                        <form method="POST" action="/booking/manage/<%= booking.manageToken %>/reschedule" id="rescheduleForm"
+                              data-job-hours="<%= jobHours %>" data-drop-off="<%= isDropOff ? '1' : '' %>" data-current-date="<%= booking.preferredDate %>" data-current-time="<%= booking.preferredTime %>">
+                            <div class="form-grid">
+                                <div class="form-field">
+                                    <label for="preferredDate">Date</label>
+                                    <input type="date" id="preferredDate" name="preferredDate" min="<%= today %>" value="<%= booking.preferredDate %>" required>
+                                </div>
+                                <div class="form-field">
+                                    <label for="preferredTime">Time window</label>
+                                    <select id="preferredTime" name="preferredTime" required>
+                                        <% windows.forEach(function(w) { %>
+                                            <option value="<%= w %>" <%= w === booking.preferredTime ? 'selected' : '' %>><%= w %></option>
+                                        <% }) %>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-hint" id="rescheduleHint"></div>
+                            <button type="submit" class="btn-primary">Request New Time</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="card-label">Cancel this booking</div>
+                        <p class="card-note">Free to cancel until 24 hours before your appointment. This can't be undone — you'd need to book again.</p>
+                        <form method="POST" action="/booking/manage/<%= booking.manageToken %>/cancel" id="cancelForm"
+                              data-confirm="Cancel this booking? This can't be undone.">
+                            <button type="submit" class="btn-outline">Cancel Booking</button>
+                        </form>
+                    </div>
+                </div>
+            <% } else { %>
+                <div class="card">
+                    <div class="card-body">
+                        <p class="card-note" style="margin-bottom:0"><%= rules.reason %></p>
+                    </div>
+                </div>
+            <% } %>
+        <% } %>
+
+        <div class="page-footer">
+            <a href="/privacy">Privacy</a><a href="/terms">Terms</a>
+        </div>
+    </div>
+
+    <script>
+        // Cancel: ask first.
+        (function () {
+            var cancelForm = document.getElementById('cancelForm');
+            if (!cancelForm) return;
+            cancelForm.addEventListener('submit', function (e) {
+                if (!window.confirm(cancelForm.dataset.confirm)) e.preventDefault();
+            });
+        })();
+
+        // Reschedule: grey out the time windows that are taken (or too
+        // short for this job) on the chosen date. The server checks again
+        // when the form is submitted.
+        (function () {
+            var form = document.getElementById('rescheduleForm');
+            if (!form) return;
+
+            var dateInput = document.getElementById('preferredDate');
+            var timeSelect = document.getElementById('preferredTime');
+            var hint = document.getElementById('rescheduleHint');
+
+            async function refresh() {
+                var date = dateInput.value;
+                if (!date) return;
+
+                var closed = [];
+                try {
+                    var res = await fetch('/api/availability?start=' + date + '&end=' + date + '&hours=' + encodeURIComponent(form.dataset.jobHours) + (form.dataset.dropOff ? '&dropoff=1' : ''));
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    var data = await res.json();
+                    closed = (data.unavailable[date] || []).concat(data.tooLate || []);
+                } catch (err) {
+                    console.error('Could not load availability:', err);
+                    hint.textContent = "Couldn't check which times are open — we'll check when you submit.";
+                    return;
+                }
+
+                // The time this booking already holds isn't "taken" by someone else.
+                var isCurrentDate = date === form.dataset.currentDate;
+                var open = 0;
+                Array.prototype.forEach.call(timeSelect.options, function (option) {
+                    var isOwnSlot = isCurrentDate && option.value === form.dataset.currentTime;
+                    option.disabled = closed.indexOf(option.value) !== -1 && !isOwnSlot;
+                    if (!option.disabled) open++;
+                });
+                if (timeSelect.selectedOptions[0] && timeSelect.selectedOptions[0].disabled) {
+                    timeSelect.value = '';
+                }
+                hint.textContent = open === 0
+                    ? 'Nothing is open that day — try another date.'
+                    : (closed.length ? 'Greyed-out times are already taken or too short for this job.' : '');
+            }
+
+            dateInput.addEventListener('change', refresh);
+            refresh();
+        })();
+    </script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 const router = require('express').Router()
+const { limitForm } = require('../config/rateLimits')
 const User = require('../models/User')
 const verification = require('../services/emailVerification')
 const { sendEmail, buildEmail } = require('../services/email')
@@ -44,7 +45,7 @@ router.get('/verify-email', async (req, res) => {
     }
 })
 
-router.post('/verify-email', async (req, res) => {
+router.post('/verify-email', limitForm('verifyCode', { fallback: '/verify-email' }), async (req, res) => {
     try {
         const doc = await loadPending(req, res)
         if (!doc) return
@@ -110,7 +111,7 @@ router.post('/verify-email', async (req, res) => {
 })
 
 // --- Send a new code ---
-router.post('/verify-email/resend', async (req, res) => {
+router.post('/verify-email/resend', limitForm('resendCode', { fallback: '/verify-email' }), async (req, res) => {
     try {
         const doc = await loadPending(req, res)
         if (!doc) return

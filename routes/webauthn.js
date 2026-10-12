@@ -1,4 +1,5 @@
 const router = require('express').Router()
+const { limitApi } = require('../config/rateLimits')
 const {
     generateRegistrationOptions,
     verifyRegistrationResponse,
@@ -118,7 +119,7 @@ router.delete('/:credentialID', ensureAuthenticated, async (req, res) => {
 
 // ---- Login (usernameless — no email typed, browser shows account picker) --
 
-router.get('/login-options', async (req, res) => {
+router.get('/login-options', limitApi('passkey'), async (req, res) => {
     try {
         const options = await generateAuthenticationOptions({
             rpID,
@@ -136,7 +137,7 @@ router.get('/login-options', async (req, res) => {
     }
 })
 
-router.post('/login-verify', async (req, res) => {
+router.post('/login-verify', limitApi('passkey'), async (req, res) => {
     try {
         const expectedChallenge = req.session.currentAuthChallenge
         if (!expectedChallenge) {

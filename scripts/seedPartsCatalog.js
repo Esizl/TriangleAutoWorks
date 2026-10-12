@@ -20,7 +20,7 @@
  */
 
 const mongoose = require('mongoose')
-const { mongoUri } = require('../config/config.json').server
+const mongoUri = require('../config/mongoUri').getMongoUri()
 const PartsCatalog = require('../models/PartsCatalog')
 
 async function seed() {

@@ -107,6 +107,8 @@
         .order-row-key { color: var(--silver-dim); flex-shrink: 0; }
         .order-row-val { color: var(--text); text-align: right; overflow-wrap: anywhere; }
         .order-row-val.total { color: var(--white); font-weight: 600; }
+        .order-link { color: var(--red); text-decoration: none; font-weight: 600; }
+        .order-link:hover { text-decoration: underline; }
 
         .review-box { border-top: 1px solid var(--border); padding: 20px 24px 22px; background: var(--card2); }
         .review-label {
@@ -244,6 +246,12 @@
                         <div class="order-row">
                             <span class="order-row-key">Discount</span>
                             <span class="order-row-val"><%= b.discount.code %> — <%= b.discount.label %></span>
+                        </div>
+                    <% } %>
+                    <% if (manageLinks[String(b._id)]) { %>
+                        <div class="order-row">
+                            <span class="order-row-key">Need to change it?</span>
+                            <span class="order-row-val"><a class="order-link" href="<%= manageLinks[String(b._id)] %>">Cancel or reschedule</a></span>
                         </div>
                     <% } %>
                     <div class="order-row">

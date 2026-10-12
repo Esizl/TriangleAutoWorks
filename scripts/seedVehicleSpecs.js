@@ -3,7 +3,7 @@
 
 const mongoose = require('mongoose')
 const VehicleSpec = require('../models/VehicleSpec') // adjust path if needed
-const { mongoUri } = require('../config/config.json').server
+const mongoUri = require('../config/mongoUri').getMongoUri()
 
 const entries = [
     {

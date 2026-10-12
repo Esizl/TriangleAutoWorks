@@ -291,7 +291,9 @@ const DETAILING_SERVICES = [
 ];
 
 function getDetailingService(name) {
-    return DETAILING_SERVICES.find(s => s.name === name) || null;
+    // Tint services (tintCatalog.js) use the same shape and the same engine.
+    const tint = (typeof TINT_SERVICES !== 'undefined') ? TINT_SERVICES : [];
+    return DETAILING_SERVICES.find(s => s.name === name) || tint.find(s => s.name === name) || null;
 }
 
 /**

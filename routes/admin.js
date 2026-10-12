@@ -8,6 +8,8 @@ const BusinessConfig = require('../models/BusinessConfig')
 const PartsCatalog = require('../models/PartsCatalog')
 const DiscountCode = require('../models/DiscountCode')
 const Review = require('../models/Review')
+const TrustedPhone = require('../models/TrustedPhone')
+const { phoneKey } = require('../services/trust')
 const User = require('../models/User')
 const bcrypt = require('bcrypt')
 const crypto = require('crypto')
@@ -142,7 +144,11 @@ router.get('/users/:id', ensureAdmin, async (req, res) => {
             req.flash('errorMessage', 'User not found.')
             return res.redirect('/admin/users')
         }
-        res.render('admin/user-detail', { targetUser })
+        const [trustedByPhone, completedBookings] = await Promise.all([
+            TrustedPhone.exists({ phone: phoneKey(targetUser.phone) }),
+            Booking.countDocuments({ phoneKey: phoneKey(targetUser.phone) || '-', status: 'completed' })
+        ])
+        res.render('admin/user-detail', { targetUser, trustedByPhone: !!trustedByPhone, completedBookings })
     } catch (err) {
         console.error(err)
         req.flash('errorMessage', 'Failed to load user.')
@@ -718,6 +724,122 @@ router.post('/site/blocklist/delete', ensureAdmin, async (req, res) => {
     }
 })
 
+// --- Site: trusted customers ("Bring it to us" drop-off) ---
+// Nobody qualifies automatically: you approve an account, or a phone
+// number (which also covers someone who hasn't made an account yet).
+// Repeat customers are listed to make approving them quick.
+const REPEAT_CUSTOMER_MIN_BOOKINGS = 2
+
+router.get('/site/trusted', ensureAdmin, ensureOwner, async (req, res) => {
+    try {
+        const [trustedAccounts, trustedPhones, completed] = await Promise.all([
+            User.find({ trustedCustomer: true }).sort({ name: 1 }),
+            TrustedPhone.find().sort({ name: 1 }),
+            Booking.find({ status: 'completed' }).select('phoneKey contact user createdAt').sort({ _id: -1 })
+        ])
+
+        const trustedPhoneKeys = new Set(trustedPhones.map(p => p.phone))
+        const trustedAccountPhones = new Set(trustedAccounts.map(u => phoneKey(u.phone)))
+
+        // Completed bookings per phone number, newest name first.
+        const byPhone = {}
+        completed.forEach(b => {
+            if (!b.phoneKey) return
+            if (!byPhone[b.phoneKey]) {
+                byPhone[b.phoneKey] = {
+                    phone: b.phoneKey,
+                    name: `${b.contact?.firstName || ''} ${b.contact?.lastName || ''}`.trim(),
+                    count: 0
+                }
+            }
+            byPhone[b.phoneKey].count++
+        })
+
+        const repeat = Object.values(byPhone)
+            .filter(r => r.count >= REPEAT_CUSTOMER_MIN_BOOKINGS)
+            .filter(r => !trustedPhoneKeys.has(r.phone) && !trustedAccountPhones.has(r.phone))
+            .sort((a, b) => b.count - a.count)
+
+        // Link each repeat customer to their account, if they have one.
+        const accounts = await User.find({}).select('name phone')
+        const accountByPhone = {}
+        accounts.forEach(u => { const k = phoneKey(u.phone); if (k) accountByPhone[k] = u })
+        repeat.forEach(r => { r.account = accountByPhone[r.phone] || null })
+
+        res.render('admin/site-trusted', {
+            trustedAccounts,
+            trustedPhones,
+            repeat,
+            minBookings: REPEAT_CUSTOMER_MIN_BOOKINGS,
+            phoneHasAccount: Object.fromEntries(trustedPhones.map(p => [p.phone, accountByPhone[p.phone] || null]))
+        })
+    } catch (err) {
+        console.error(err)
+        req.flash('errorMessage', 'Failed to load trusted customers.')
+        res.redirect('/admin/site')
+    }
+})
+
+// Approve or un-approve an account. Comes from this page and from the
+// user's own admin page (back to wherever it came from).
+router.post('/site/trusted/account/:id', ensureAdmin, ensureOwner, async (req, res) => {
+    const back = req.body.back === 'user' ? `/admin/users/${req.params.id}` : '/admin/site/trusted'
+    try {
+        const trusted = req.body.trusted === 'yes'
+        const user = await User.findByIdAndUpdate(req.params.id, { trustedCustomer: trusted }, { new: true })
+        if (!user) {
+            req.flash('errorMessage', 'User not found.')
+            return res.redirect('/admin/site/trusted')
+        }
+        req.flash('successMessage', trusted
+            ? `${user.name} can now choose "Bring it to us" when logged in.`
+            : `${user.name}'s account is no longer approved for drop-off.` +
+              (await TrustedPhone.exists({ phone: phoneKey(user.phone) }) ? ' (Their phone number is still on the list, so they still qualify — remove it there too.)' : ''))
+        res.redirect(back)
+    } catch (err) {
+        console.error(err)
+        req.flash('errorMessage', 'Failed to update that account.')
+        res.redirect(back)
+    }
+})
+
+router.post('/site/trusted/phone', ensureAdmin, ensureOwner, async (req, res) => {
+    try {
+        const phone = phoneKey(req.body.phone)
+        if (!phone) {
+            req.flash('errorMessage', 'Enter a 10-digit phone number.')
+            return res.redirect('/admin/site/trusted')
+        }
+        if (await TrustedPhone.exists({ phone })) {
+            req.flash('errorMessage', 'That number is already on the list.')
+            return res.redirect('/admin/site/trusted')
+        }
+        await TrustedPhone.create({
+            phone,
+            name: String(req.body.name || '').trim().slice(0, 80),
+            note: String(req.body.note || '').trim().slice(0, 200)
+        })
+        req.flash('successMessage', 'Added. Whoever logs in with an account using that number can now choose "Bring it to us".')
+        res.redirect('/admin/site/trusted')
+    } catch (err) {
+        console.error(err)
+        req.flash('errorMessage', 'Failed to add that number.')
+        res.redirect('/admin/site/trusted')
+    }
+})
+
+router.post('/site/trusted/phone/:id/delete', ensureAdmin, ensureOwner, async (req, res) => {
+    try {
+        await TrustedPhone.findByIdAndDelete(req.params.id)
+        req.flash('successMessage', 'Removed from the trusted list.')
+        res.redirect('/admin/site/trusted')
+    } catch (err) {
+        console.error(err)
+        req.flash('errorMessage', 'Failed to remove that number.')
+        res.redirect('/admin/site/trusted')
+    }
+})
+
 // --- Site: business config ---
 router.get('/site/config', ensureAdmin, ensureOwner, async (req, res) => {
     try {
@@ -736,7 +858,23 @@ router.post('/site/config', ensureAdmin, ensureOwner, async (req, res) => {
         const laborRate = parseFloat(req.body.laborRatePerHour)
         const diagFee = parseFloat(req.body.diagnosticStandaloneFee)
         const capacity = parseInt(req.body.bookingCapacityPerWindow, 10)
+        const taxPercent = parseFloat(req.body.taxRatePercent)
+        const dropOffValue = parseFloat(req.body.dropOffDiscountValue)
+        const dropOffType = req.body.dropOffDiscountType
 
+        if (!['percent', 'fixed'].includes(dropOffType)) {
+            req.flash('errorMessage', 'Pick % off or $ off for the drop-off discount.')
+            return res.redirect('/admin/site/config')
+        }
+        if (isNaN(dropOffValue) || dropOffValue < 0 || (dropOffType === 'percent' && dropOffValue > 100)) {
+            req.flash('errorMessage', 'Drop-off discount must be 0 or more (and at most 100%).')
+            return res.redirect('/admin/site/config')
+        }
+
+        if (isNaN(taxPercent) || taxPercent < 0 || taxPercent > 25) {
+            req.flash('errorMessage', 'Sales tax must be a percentage between 0 and 25.')
+            return res.redirect('/admin/site/config')
+        }
         if (isNaN(laborRate) || laborRate < 0) {
             req.flash('errorMessage', 'Labor rate must be a number of at least 0.')
             return res.redirect('/admin/site/config')
@@ -753,6 +891,11 @@ router.post('/site/config', ensureAdmin, ensureOwner, async (req, res) => {
         await BusinessConfig.updateConfig({
             laborRatePerHour: laborRate,
             diagnosticStandaloneFee: diagFee,
+            taxRatePercent: taxPercent,
+            dropOffAddress: String(req.body.dropOffAddress || '').trim().slice(0, 200),
+            dropOffNotes: String(req.body.dropOffNotes || '').trim().slice(0, 300),
+            dropOffDiscountType: dropOffType,
+            dropOffDiscountValue: dropOffValue,
             bookingCapacityPerWindow: capacity
         })
 

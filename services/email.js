@@ -35,6 +35,9 @@ function isEmailConfigured() {
  */
 function appUrl(req) {
     const configured = setting('APP_URL', 'appUrl')
+    if (!configured && !req) {
+        throw new Error('APP_URL is not set, so links in emails cannot be built. Set APP_URL (e.g. https://triangleautowork.com).')
+    }
     return (configured || `${req.protocol}://${req.get('host')}`).replace(/\/+$/, '')
 }
 
@@ -48,9 +51,19 @@ function escapeHtml(value) {
  * Shared branded layout so every email looks the same.
  * paragraphs: plain-text strings (escaped here). button: { label, url }.
  * code: a short one-time code, shown large under the paragraphs.
+ * rows: [[label, value], …] shown as a details table under the
+ * paragraphs (a booking summary, for example). Empty values are skipped.
  * Returns { html, text } ready for sendEmail().
  */
-function buildEmail({ heading, paragraphs, code, button, footnote }) {
+function buildEmail({ heading, paragraphs, rows, code, button, footnote }) {
+    const detailRows = (rows || []).filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== '')
+    const rowsHtml = detailRows.length
+        ? `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin:8px 0 20px;border-collapse:collapse;">${detailRows.map(([label, value]) =>
+            `<tr>
+               <td style="padding:8px 12px 8px 0;border-bottom:1px solid #eeeeee;font-size:13px;color:#777777;vertical-align:top;white-space:nowrap;">${escapeHtml(label)}</td>
+               <td style="padding:8px 0;border-bottom:1px solid #eeeeee;font-size:14px;line-height:1.5;color:#111111;">${escapeHtml(value).replace(/\n/g, '<br>')}</td>
+             </tr>`).join('')}</table>`
+        : ''
     const body = paragraphs
         .map(p => `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#333333;">${escapeHtml(p)}</p>`)
         .join('')
@@ -73,6 +86,7 @@ function buildEmail({ heading, paragraphs, code, button, footnote }) {
       <div style="font-size:13px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#C8102E;">Triangle Auto Works</div>
       <h1 style="margin:10px 0 20px;font-size:24px;line-height:1.2;color:#111111;">${escapeHtml(heading)}</h1>
       ${body}
+      ${rowsHtml}
       ${codeHtml}
       ${buttonHtml}
       ${footnoteHtml}
@@ -86,6 +100,7 @@ function buildEmail({ heading, paragraphs, code, button, footnote }) {
         heading,
         '',
         ...paragraphs,
+        ...(detailRows.length ? ['', ...detailRows.map(([label, value]) => `${label}: ${String(value).replace(/\n/g, ', ')}`)] : []),
         ...(code ? ['', code] : []),
         ...(button ? ['', `${button.label}: ${button.url}`] : []),
         ...(footnote ? ['', footnote] : []),
